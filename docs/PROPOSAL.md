@@ -1,14 +1,14 @@
 # Project Proposal
 
 ## 1. Title & One-Line Value Proposition
-**SecureHealth Chain** — Privacy-preserving healthcare data sharing with custodian-managed access control and differential privacy for audit transparency.
+**SecureHealth Chain** — Privacy-preserving healthcare data sharing with custodian-managed access control for audit transparency.
 
 ## 2. Problem & Stakeholders
 Healthcare data sharing today suffers from fragmented systems where patients lack control over their medical records, providers struggle with interoperability, and researchers cannot access aggregated data without compromising privacy. Patients need consent management, providers require secure data exchange, auditors need compliance verification, and researchers benefit from privacy-preserved analytics—all while maintaining HIPAA compliance and patient trust.
 
 ## 3. Research Alignment
-Theme: Healthcare privacy + custodian repository + local differential privacy.
-This extends the instructor's work on privacy-preserving healthcare systems by implementing custodian-mediated access patterns with cryptographic audit trails and applying local differential privacy to protect individual patient data while enabling population health insights.
+Theme: Healthcare privacy + custodian repository.
+This extends on privacy-preserving healthcare systems by implementing custodian-mediated access patterns with audit trails to protect individual patient data.
 
 ## 4. Platform & Rationale
 Choice: Fabric/NeuroBlock
