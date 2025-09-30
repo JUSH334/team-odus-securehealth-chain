@@ -16,9 +16,8 @@ Hyperledger Fabric provides the ideal foundation for healthcare data sharing thr
 
 ## 5. MVP Features + Stretch
 **MVP (Weeks 6-10):**
-- Patient/Provider registry with role-based actions (patients grant consent, providers write encounter summaries)
-- Custodian gateway that cryptographically signs and logs all access requests with on-chain audit events
-- Local differential privacy implementation adding Laplace noise to weekly patient count aggregates before chain logging
+- Patient/Provider read/write access with role-based actions
+- Custodian gateway that cryptographically signs and logs all access requests with chain audit events
 - Basic consent management UI showing active permissions and access history
 
 **Stretch (Weeks 11-13):**
@@ -64,18 +63,18 @@ Data Flow: User Request → Gateway (VC check) → Sign → Chaincode →
 ```
 
 ## 7. Security & Privacy Requirements
-Our system implements defense-in-depth security through verifiable credential-based authentication at the gateway layer, ensuring only authorized healthcare providers and registered patients can interact with the system. All write operations require cryptographic signatures verified by the custodian gateway before chaincode execution. We enforce strict endorsement policies requiring multi-org consensus for consent changes. For privacy, we implement local differential privacy with configurable epsilon (ε=1.0 default) on all aggregate queries, ensuring individual patient data cannot be reverse-engineered from population statistics. Private Data Collections isolate PHI within authorized organizations while maintaining hash-based integrity on the public ledger. Input validation prevents injection attacks, rate limiting mitigates DoS attempts, and comprehensive audit logging provides forensic capabilities for compliance verification.
+Our system implements defense-in-depth security through verifiable credential-based authentication, ensuring only authorized healthcare providers and registered patients can interact with the system. All write operations require cryptographic signatures verified by the custodian gateway before execution. We enforce strict endorsement policies requiring consensus for consent changes. Private Data Collections isolate PHI within authorized organizations while maintaining hash-based integrity on the public ledger. Input validation prevents injection attacks, rate limiting mitigates DoS attempts, and comprehensive audit logging provides forensic capabilities for compliance verification.
 
 ## 8. Milestones (Weeks 6-14)
-- **W6:** Fabric environment configured; skeleton chaincode with ConsentManager and AuditLogger; first unit test for consent creation; vertical slice architecture finalized
-- **W7:** Vertical slice demo showing patient consent flow from UI through gateway to chaincode state change with audit event emission
-- **W8:** Complete EncounterRegistry chaincode with provider role validation; implement custodian gateway request signing; consume audit events in monitoring UI
-- **W9:** Implement VC-based authentication for patients/providers; add Laplace noise mechanism for aggregate queries with ε=1.0; basic consent management UI operational
-- **W10:** Document threat model identifying top 5 risks; implement input validation, rate limiting, and endorsement policy enforcement as primary mitigations
-- **W11:** Achieve 80% test coverage with 15+ unit tests; capture performance metrics (consent latency <500ms, DP calculation overhead)
-- **W12:** Integrate LLM-assisted smart contract audit tool; build analytics dashboard showing differentially private population health trends
-- **W13:** Feature freeze; comprehensive documentation pass including API docs, deployment guide, and privacy parameter tuning instructions
-- **W14:** Practice poster presentation with 3-minute pitch; incorporate feedback; prepare live demo with fallback video
+- **W6:** Environment & Skeleton
+- **W7:** Vertical Slice
+- **W8:** Feature 1
+- **W9:** Feature 2 + Basic Authorization
+- **W10:** Security & Privacy Sprint
+- **W11:** Testing & Metrics
+- **W12:** LLM/Analytics Add-on
+- **W13:** Freeze & Polish
+- **W14:** Dryrun
 
 ## 9. Team & Roles + Logistics
 **Team Odus Roles:**
@@ -87,7 +86,6 @@ Our system implements defense-in-depth security through verifiable credential-ba
 
 **Logistics:**
 - Standup: Tuesdays/Thursdays 6PM via Discord
-- Async updates: Slack channel #team-odus
 - Repo: https://github.com/JUSH334/team-odus-securehealth-chain.git
 
 ## 10. Top Risks & Mitigations
