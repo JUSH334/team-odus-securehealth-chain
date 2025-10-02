@@ -11,8 +11,8 @@ Theme: Healthcare privacy + custodian repository.
 This extends on privacy-preserving healthcare systems by implementing custodian-mediated access patterns with audit trails to protect individual patient data.
 
 ## 4. Platform & Rationale
-Choice: Fabric/NeuroBlock
-Hyperledger Fabric provides the ideal foundation for healthcare data sharing through its native support for organizational roles, private data collections for PHI isolation, fine-grained endorsement policies for consent management, and built-in audit capabilities—all essential for HIPAA compliance and multi-stakeholder healthcare environments.
+Choice: HardHat
+HardHat provides the ideal foundation for healthcare data sharing through its native support for organizational roles, private data collections for PHI isolation, fine-grained endorsement policies for consent management, and built-in audit capabilities—all essential for HIPAA compliance and multi-stakeholder healthcare environments.
 
 ## 5. MVP Features + Stretch
 **MVP (Weeks 6-10):**
