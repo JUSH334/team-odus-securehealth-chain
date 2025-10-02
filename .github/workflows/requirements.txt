@@ -1,7 +1,1 @@
 pytest
-
-def test_something():  # ✅ Will be discovered
-    assert True
-
-def check_something():  # ❌ Won't be discovered
-    assert True
