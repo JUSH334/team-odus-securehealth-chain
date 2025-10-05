@@ -2,7 +2,7 @@
 
 This week, team ODUS focused on onboarding all collaborators into Github and establishing the skeleton and environment.
 
-We created 6 user stories found in the project board to guide our inital development. 
+We created our 6 inital user stories + 2 stretch goals via the project board to guide our first steps. 
 
 Here is our link to our project board below:
 
