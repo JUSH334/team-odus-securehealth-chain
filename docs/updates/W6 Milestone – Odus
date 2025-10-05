@@ -1,8 +1,40 @@
 ## W6 Milestones
 
-- Onboard collborators and familiraize with Github
-- Requirement Analysis
-- Created project board with 6 user stories + 2 stretch goals
-- Inital Tech Stack and defining roles
-- Skeleton - using HardHat
-- Compiled working CI and first test passes
+## Progress
+This week, we successfully completed our project foundation phase with several key achievements:
+- **Team Formation & Onboarding**: Onboarded all collaborators and established our GitHub workflow with proper branch protections and collaboration guidelines
+- **Requirements & Planning**: Conducted comprehensive requirement analysis and created a structured project board with 6 core user stories (Patient Registration, Provider Onboarding, Consent Management, Record Upload, Record Viewing, and Guardian Registration) plus 2 stretch goals (Mobile App Access and Document Export)
+- **Technical Foundation**: Initalized tech stack decisions and defined clear role assignments
+- **Development Environment**: Set up project skeleton using the Hardhat framework
+- **Quality Assurance**: Implemented CI/CD pipeline that is now operational with our first test suite passing successfully
+
+## Evidence
+**Deliverables completed:**
+- GitHub repository with all collaborators actively contributing
+- Project board populated with 8 total user stories mapped to sprint cycles
+- Automated CI pipeline (GitHub Actions) running successfully
+- Initial test with passing unit tests
+
+**Artifacts:** Project board viewable in repository, CI build logs showing green status
+
+## Technical Depth
+
+**CI/CD Implementation:**
+- Configured automated testing pipeline that runs Hardhat tests on every pull request
+
+**Challenges addressed:** Established working CI, Github onboarding, tech stack decisions
+
+## Next Week's Plan
+- Initalize development for registration/login for various roles
+- Update documentation
+- Unit and end to end testing
+
+## Collaboration
+Communication channels established:
+- Daily standups via Discord to sync progress
+- Reviews before merging to MAIN
+- Shared documentation for onboarding and technical decisions
+- Role defining
+
+
+**Total self-assessment: 10/10 pts**
