@@ -10,7 +10,7 @@ https://github.com/users/JUSH334/projects/2
 
 In addition, we also developed an inital working CI.
 
-As of now, since we focused on requirement analysis and project planning this week, therefore there are no instructions for how to initialize our web application as we do not have a prototype just yet.
+As of now, since we focused on requirement analysis and project planning this week, therefore there are no instructions for how to initialize our web application locally just yet. However, our plan/goal is to have an updated README.md in the upcoming weeks that will establish these further.
 
 Screenshot of CI:
 <img width="1877" height="723" alt="Screenshot 2025-10-02 103301" src="https://github.com/user-attachments/assets/a7cb328f-a9de-44b7-b5ad-d3b6de2671ee" />
