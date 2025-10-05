@@ -3,6 +3,9 @@
 This week, team ODUS focused on onboarding all collaborators into Github and establishing the skeleton and environment.
 
 We created 6 user stories found in the project board to guide our inital development. 
+Here is our link to our project board:
+
+https://github.com/users/JUSH334/projects/2
 
 In addition, we also developed an inital working CI.
 
