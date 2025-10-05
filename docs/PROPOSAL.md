@@ -41,7 +41,7 @@ HardHat provides the ideal foundation for healthcare data sharing through its na
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│              Hyperledger Fabric / NeuroBlock                │
+│              HardHat                                         |
 ├──────────────────────────────────────────────────────────────┤
 │  Chaincode Components:                                       │
 │  • ConsentManager: Grant/revoke patient permissions          │
