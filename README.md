@@ -1,6 +1,6 @@
 ## W6 Milestone - ODUS
 
-This week, team ODUS focused on onboarding all collaborators into Github and establishing the skelton and environment.
+This week, team ODUS focused on onboarding all collaborators into Github and establishing the skeleton and environment.
 
 We created 6 user stories found in the project board to guide our inital development. 
 
