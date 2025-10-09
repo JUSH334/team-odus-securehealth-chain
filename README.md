@@ -1,16 +1,1 @@
-## W6 Milestone - ODUS
-
-This week, team ODUS focused on onboarding all collaborators into Github and establishing the skeleton and environment.
-
-We created our 6 inital user stories + 2 stretch goals via the project board to guide our first steps. 
-
-Here is our link to our project board below:
-
-https://github.com/users/JUSH334/projects/2
-
-In addition, we also developed an inital working CI.
-
-As of now, since we focused on requirement analysis and project planning this week, therefore there are no instructions for how to initialize our web application locally just yet. However, our plan/goal is to have an updated README.md in the upcoming weeks that will establish these further as we progress.
-
-Screenshot of CI:
-<img width="1877" height="723" alt="Screenshot 2025-10-02 103301" src="https://github.com/user-attachments/assets/a7cb328f-a9de-44b7-b5ad-d3b6de2671ee" />
+## W7 Milestone - ODUS
