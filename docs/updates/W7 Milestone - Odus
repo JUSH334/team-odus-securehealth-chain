@@ -1,1 +1,45 @@
-CHANGE LATER
+W7 Milestones - Vertical Slice
+
+### Progress
+This week, we successfully completed the implementation of "One end-to-end path: client → contract/chaincode → state change/event." demonstrating a verifiable on-chain effect:
+- Client Integration: Built a minimal CLI client capable of invoking a smart contract action with a single command
+- Smart Contract Logic: Implemented a contract function that updates on-chain state and emits a corresponding event
+- Read-Back Proof: Developed a verification script that queries the blockchain to confirm the new state or event emission
+- Architecture Documentation: Created a visual architecture diagram highlighting the full request-to-ledger path
+- Automated Testing: Added a test suite covering both the happy path and one edge case, ensuring reliable functionality
+
+### Evidence
+Deliverables completed:
+- Functional end-to-end path: client → contract → on-chain state/event → read-back
+- CLI or web-based trigger that performs a verifiable state change
+- Architecture diagram (docs/diagrams/architecture)
+- Proof GIF (docs/proof.gif) showing the action → confirmation flow
+- CI pipeline running successfully with test coverage
+
+Artifacts:
+- Source code for client, contract, and verification scripts
+- Test logs confirming successful execution
+- CI output showing passing tests
+
+### Technical Depth
+Implementation Details:
+- Contract designed to handle a single state variable update with an emitted event on change
+- Verification script reads updated contract state or event log to confirm results
+- Diagram and documentation outline the entire data path for transparency
+
+Challenges Addressed:
+- Ensured end-to-end consistency between contract and client
+- Established deterministic state verification for testing
+- Integrated CI pipeline for automated validation
+
+Next Week's Plan
+- Extend the contract with additional state transitions and events
+- Expand test coverage to include failure conditions and event assertions
+- Add web client option for browser-based interaction
+- Update documentation with deployment instructions
+
+Collaboration
+- Communication and workflow practices established:
+- GitHub repository with defined branching and PR review process
+- Shared documentation in docs/ for architecture and testing details
+- Regular syncs for progress updates and issue tracking
