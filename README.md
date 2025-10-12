@@ -4,7 +4,7 @@
 ###  Project Overview
 SecureHealth Chain is a blockchain-based healthcare platform that provides transparent, secure patient registration and insurance claim processing. This Week 7 milestone demonstrates a complete end-to-end patient registration flow from CLI to blockchain.
 
-### 🎯 Week 7 Deliverables
+###  Week 7 Deliverables
 -  **Minimal CLI Client** - Single command patient registration
 -  **Smart Contract** - PatientRegistry with state management
 -  **State Changes** - Patient data stored on-chain
@@ -126,7 +126,7 @@ npx hardhat test test/W7-tests.js
 
 ---
 
-## 📖 Understanding the Components
+##  Understanding the Components
 
 ### Smart Contract: `PatientRegistry.sol`
 Core functions:
@@ -149,35 +149,40 @@ Key features:
 
 ### Test Suite: `W7-tests.js`
 Tests covered:
-1. ✅ Successful registration with event
-2. ✅ Correct data storage
-3. ✅ Duplicate address prevention
-4. ✅ Duplicate member ID prevention
-5. ✅ Input validation
-6. ✅ Patient count tracking
-7. ✅ Read-back verification
-8. ✅ Complete end-to-end flow
+1.  Successful registration with event
+2.  Correct data storage
+3.  Duplicate address prevention
+4.  Duplicate member ID prevention
+5.  Input validation
+6.  Patient count tracking
+7.  Read-back verification
+8.  Complete end-to-end flow
 
 ---
 
 ### Screenshots:
 1. **Patient Registration Output**
+   
 <img width="873" height="742" alt="patient-registration " src="https://github.com/user-attachments/assets/daf921a3-9b6d-480b-9c95-6f7a2e165c0e" />
 
-2. **Test Results**
+3. **Test Results**
+
 <img width="1133" height="432" alt="test1" src="https://github.com/user-attachments/assets/a64457c3-1ead-493b-9939-967a2f53a837" />
 <img width="1106" height="767" alt="test2" src="https://github.com/user-attachments/assets/c3310023-03c1-49fc-98b5-48b6e4217a2f" />
 <img width="1086" height="715" alt="test3" src="https://github.com/user-attachments/assets/3c23d3c1-1bea-4376-a5e3-4f424402b08a" />
 
-3. **Blockchain State**
+5. **Blockchain State**
 Contract Deployment:
+
 <img width="797" height="135" alt="contract deploy block 1" src="https://github.com/user-attachments/assets/3bfad823-a956-4c7a-af1b-b1fb4f92fecd" />
 
 
 Patient Registration:
+
 <img width="807" height="150" alt="patient registraction block2" src="https://github.com/user-attachments/assets/70ce63ae-ce01-4b73-9a2c-28b83dda4d7f" />
 
 Verification Calls:
+
 <img width="657" height="245" alt="state verification calls" src="https://github.com/user-attachments/assets/5236e043-1c6c-4e1a-b088-a88f78827e4e" />
 
 ### Recording:
