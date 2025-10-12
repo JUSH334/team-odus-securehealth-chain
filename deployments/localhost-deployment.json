@@ -1,0 +1,9 @@
+{
+  "network": "localhost",
+  "contractName": "PatientRegistry",
+  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "deploymentTime": "2025-10-12T18:05:41.563Z",
+  "transactionHash": "0xd0caa0897d493bc0131b6bca0b67ca4bbc61447d0ad2efce07f93e90c7031ca0",
+  "blockNumber": 1
+}
