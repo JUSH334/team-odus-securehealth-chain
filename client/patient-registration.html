@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureHealth Chain - Patient Registration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e2e8f0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #60a5fa;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+        }
+
+        input.error {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .error-message {
+            color: #f87171;
+            font-size: 12px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .success-message {
+            color: #4ade80;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.processing {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        }
+
+        .event-log {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 11px;
+        }
+
+        .event-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 3px solid;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .event-validation-start {
+            background: rgba(251, 191, 36, 0.1);
+            border-left-color: #fbbf24;
+        }
+
+        .event-validation-success {
+            background: rgba(34, 197, 94, 0.1);
+            border-left-color: #22c55e;
+        }
+
+        .event-validation-failed {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: #ef4444;
+        }
+
+        .event-blockchain-submit {
+            background: rgba(59, 130, 246, 0.1);
+            border-left-color: #3b82f6;
+        }
+
+        .event-blockchain-confirmed {
+            background: rgba(16, 185, 129, 0.1);
+            border-left-color: #10b981;
+        }
+
+        .event-blockchain-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: #ef4444;
+        }
+
+        .event-system {
+            background: rgba(148, 163, 184, 0.1);
+            border-left-color: #94a3b8;
+        }
+
+        .event-type {
+            color: #e2e8f0;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .event-data {
+            color: #94a3b8;
+            margin: 5px 0;
+            word-break: break-all;
+        }
+
+        .event-timestamp {
+            color: #64748b;
+            font-size: 10px;
+            margin-top: 5px;
+        }
+
+        .test-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .test-button {
+            padding: 10px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+            font-size: 13px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .test-button:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+        }
+
+        .test-results {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 120px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        .test-pass {
+            color: #4ade80;
+            margin: 5px 0;
+        }
+
+        .test-fail {
+            color: #f87171;
+            margin: 5px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #f1f5f9;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏥 SecureHealth Chain</h1>
+        <p class="subtitle">Blockchain-Based Patient Registration System</p>
+    </div>
+
+    <div class="container">
+        <!-- Registration Panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <span class="status-indicator"></span>
+                Patient Registration
+            </div>
+
+            <div class="connection-status">
+                <span class="status-dot" id="connectionDot"></span>
+                <span id="connectionText">Blockchain: Disconnected</span>
+            </div>
+
+            <form id="registrationForm">
+                <div class="form-group">
+                    <label for="memberID">Member ID</label>
+                    <input type="text" id="memberID" placeholder="e.g., MEM123456" maxlength="20">
+                    <div class="error-message" id="memberIDError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="patientName">Patient Name</label>
+                    <input type="text" id="patientName" placeholder="Full name">
+                    <div class="error-message" id="patientNameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dateOfBirth">Date of Birth</label>
+                    <input type="date" id="dateOfBirth">
+                    <div class="error-message" id="dateOfBirthError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="bloodType">Blood Type</label>
+                    <select id="bloodType">
+                        <option value="">Select blood type</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                    </select>
+                    <div class="error-message" id="bloodTypeError"></div>
+                </div>
+
+                <button type="submit" id="submitBtn">Register Patient</button>
+            </form>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Registrations</div>
+                    <div class="stat-value" id="totalRegistrations">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Events Emitted</div>
+                    <div class="stat-value" id="totalEvents">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Log Panel -->
+        <div class="panel">
+            <div class="panel-title">📡 Event Stream</div>
+            <div class="event-log" id="eventLog"></div>
+        </div>
+
+        <!-- Testing Panel -->
+        <div class="panel">
+            <div class="panel-title">🧪 Testing Suite</div>
+            
+            <div class="test-section">
+                <div class="test-grid">
+                    <button class="test-button" onclick="runTest('valid')">✅ Valid Registration</button>
+                    <button class="test-button" onclick="runTest('emptyMemberID')">❌ Empty Member ID</button>
+                    <button class="test-button" onclick="runTest('invalidDate')">❌ Invalid Date</button>
+                    <button class="test-button" onclick="runTest('missingFields')">❌ Missing Fields</button>
+                    <button class="test-button" onclick="runTest('duplicateMemberID')">❌ Duplicate Member</button>
+                    <button class="test-button" onclick="runAllTests()">🔬 Run All Tests</button>
+                </div>
+                <div class="test-results" id="testResults">Test results will appear here...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Event Bus System with blockchain integration simulation
+        class EventBus {
+            constructor() {
+                this.events = {};
+                this.eventHistory = [];
+                this.totalEvents = 0;
+            }
+
+            on(event, handler) {
+                if (!this.events[event]) {
+                    this.events[event] = [];
+                }
+                this.events[event].push(handler);
+            }
+
+            emit(event, data) {
+                const eventData = {
+                    type: event,
+                    data: data,
+                    timestamp: new Date().toISOString(),
+                    blockNumber: this.simulateBlockNumber()
+                };
+                
+                this.eventHistory.push(eventData);
+                this.totalEvents++;
+                
+                // Update event counter
+                document.getElementById('totalEvents').textContent = this.totalEvents;
+                
+                if (this.events[event]) {
+                    this.events[event].forEach(handler => handler(eventData));
+                }
+                
+                // Log to console for debugging
+                console.log(`[EVENT] ${event}:`, data);
+            }
+
+            simulateBlockNumber() {
+                return Math.floor(Math.random() * 1000000) + 1000000;
+            }
+        }
+
+        // Blockchain Connection Simulator
+        class BlockchainConnector {
+            constructor(eventBus) {
+                this.eventBus = eventBus;
+                this.connected = false;
+                this.contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+                this.registeredMembers = new Set();
+            }
+
+            async connect() {
+                // Simulate connection delay
+                await this.delay(500);
+                this.connected = true;
+                this.updateConnectionStatus(true);
+                this.eventBus.emit('blockchain:connected', { 
+                    contractAddress: this.contractAddress,
+                    network: 'localhost'
+                });
+                return true;
+            }
+
+            async registerPatient(memberID, encryptedData) {
+                if (!this.connected) {
+                    throw new Error('Blockchain not connected');
+                }
+
+                // Check for duplicate
+                if (this.registeredMembers.has(memberID)) {
+                    throw new Error('Member ID already registered on blockchain');
+                }
+
+                // Simulate blockchain transaction
+                this.eventBus.emit('blockchain:tx:submitted', {
+                    memberID,
+                    txHash: '0x' + this.generateHash()
+                });
+
+                await this.delay(1500); // Simulate block confirmation time
+
+                // Add to registered members
+                this.registeredMembers.add(memberID);
+
+                const receipt = {
+                    transactionHash: '0x' + this.generateHash(),
+                    blockNumber: Math.floor(Math.random() * 1000000) + 1000000,
+                    gasUsed: Math.floor(Math.random() * 50000) + 100000,
+                    status: true
+                };
+
+                this.eventBus.emit('blockchain:tx:confirmed', {
+                    memberID,
+                    receipt
+                });
+
+                return receipt;
+            }
+
+            generateHash() {
+                return [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            updateConnectionStatus(connected) {
+                const dot = document.getElementById('connectionDot');
+                const text = document.getElementById('connectionText');
+                
+                if (connected) {
+                    dot.classList.add('connected');
+                    text.textContent = `Blockchain: Connected (${this.contractAddress.slice(0, 6)}...${this.contractAddress.slice(-4)})`;
+                } else {
+                    dot.classList.remove('connected');
+                    text.textContent = 'Blockchain: Disconnected';
+                }
+            }
+        }
+
+        // Input Validation Module
+        class PatientValidator {
+            static validateMemberID(memberID) {
+                const errors = [];
+                
+                if (!memberID || memberID.trim().length === 0) {
+                    errors.push('Member ID is required');
+                } else if (memberID.length < 6) {
+                    errors.push('Member ID must be at least 6 characters');
+                } else if (memberID.length > 20) {
+                    errors.push('Member ID must not exceed 20 characters');
+                } else if (!/^MEM[A-Z0-9]+$/i.test(memberID)) {
+                    errors.push('Member ID must start with "MEM" followed by alphanumeric characters');
+                }
+                
+                return errors;
+            }
+
+            static validatePatientName(name) {
+                const errors = [];
+                
+                if (!name || name.trim().length === 0) {
+                    errors.push('Patient name is required');
+                } else if (name.length < 2) {
+                    errors.push('Name must be at least 2 characters');
+                } else if (!/^[a-zA-Z\s'-]+$/.test(name)) {
+                    errors.push('Name can only contain letters, spaces, hyphens, and apostrophes');
+                }
+                
+                return errors;
+            }
+
+            static validateDateOfBirth(dob) {
+                const errors = [];
+                
+                if (!dob) {
+                    errors.push('Date of birth is required');
+                } else {
+                    const date = new Date(dob);
+                    const now = new Date();
+                    
+                    if (date >= now) {
+                        errors.push('Date of birth must be in the past');
+                    }
+                    
+                    const age = Math.floor((now - date) / (365.25 * 24 * 60 * 60 * 1000));
+                    if (age > 150) {
+                        errors.push('Invalid date of birth');
+                    }
+                }
+                
+                return errors;
+            }
+
+            static validateBloodType(bloodType) {
+                const errors = [];
+                
+                if (!bloodType) {
+                    errors.push('Blood type is required');
+                }
+                
+                return errors;
+            }
+
+            static validateAll(data) {
+                const allErrors = {
+                    memberID: this.validateMemberID(data.memberID),
+                    patientName: this.validatePatientName(data.patientName),
+                    dateOfBirth: this.validateDateOfBirth(data.dateOfBirth),
+                    bloodType: this.validateBloodType(data.bloodType)
+                };
+
+                const hasErrors = Object.values(allErrors).some(errors => errors.length > 0);
+                return { allErrors, hasErrors };
+            }
+        }
+
+        // Patient Registration Feature
+        class PatientRegistrationFeature {
+            constructor(eventBus, blockchain) {
+                this.eventBus = eventBus;
+                this.blockchain = blockchain;
+                this.totalRegistrations = 0;
+            }
+
+            async register(patientData) {
+                // Emit validation start
+                this.eventBus.emit('validation:start', { 
+                    memberID: patientData.memberID 
+                });
+
+                // Validate input
+                const { allErrors, hasErrors } = PatientValidator.validateAll(patientData);
+                
+                if (hasErrors) {
+                    this.eventBus.emit('validation:failed', { 
+                        errors: allErrors,
+                        memberID: patientData.memberID 
+                    });
+                    throw { 
+                        type: 'ValidationError', 
+                        errors: allErrors 
+                    };
+                }
+
+                // Emit validation success
+                this.eventBus.emit('validation:success', { 
+                    memberID: patientData.memberID 
+                });
+
+                // Encrypt patient data
+                const encryptedData = this.encryptData(patientData);
+                
+                try {
+                    // Submit to blockchain
+                    this.eventBus.emit('blockchain:submit', {
+                        memberID: patientData.memberID,
+                        action: 'registerPatient'
+                    });
+
+                    const receipt = await this.blockchain.registerPatient(
+                        patientData.memberID,
+                        encryptedData
+                    );
+
+                    // Emit registration success
+                    this.eventBus.emit('registration:success', {
+                        memberID: patientData.memberID,
+                        txHash: receipt.transactionHash,
+                        blockNumber: receipt.blockNumber
+                    });
+
+                    this.totalRegistrations++;
+                    document.getElementById('totalRegistrations').textContent = this.totalRegistrations;
+
+                    return receipt;
+                } catch (error) {
+                    this.eventBus.emit('registration:error', {
+                        memberID: patientData.memberID,
+                        error: error.message
+                    });
+                    throw error;
+                }
+            }
+
+            encryptData(data) {
+                // Simple encryption simulation (convert to hex)
+                // Browser-compatible hex encoding
+                const jsonStr = JSON.stringify(data);
+                let hex = '0x';
+                for (let i = 0; i < jsonStr.length; i++) {
+                    const charCode = jsonStr.charCodeAt(i);
+                    const hexValue = charCode.toString(16).padStart(2, '0');
+                    hex += hexValue;
+                }
+                return hex;
+            }
+        }
+
+        // Initialize system
+        const eventBus = new EventBus();
+        const blockchain = new BlockchainConnector(eventBus);
+        const registrationFeature = new PatientRegistrationFeature(eventBus, blockchain);
+
+        // Event Log UI Handler
+        function addEventToLog(eventData) {
+            const logElement = document.getElementById('eventLog');
+            const eventDiv = document.createElement('div');
+            
+            // Determine event styling
+            let eventClass = 'event-system';
+            if (eventData.type.includes('validation:start')) eventClass = 'event-validation-start';
+            if (eventData.type.includes('validation:success')) eventClass = 'event-validation-success';
+            if (eventData.type.includes('validation:failed')) eventClass = 'event-validation-failed';
+            if (eventData.type.includes('blockchain:submit')) eventClass = 'event-blockchain-submit';
+            if (eventData.type.includes('blockchain:tx:confirmed')) eventClass = 'event-blockchain-confirmed';
+            if (eventData.type.includes('error')) eventClass = 'event-blockchain-error';
+            
+            eventDiv.className = `event-item ${eventClass}`;
+            
+            // Format event data for display
+            let dataDisplay = '';
+            if (eventData.data) {
+                if (typeof eventData.data === 'object') {
+                    dataDisplay = Object.entries(eventData.data)
+                        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+                        .join('<br>');
+                } else {
+                    dataDisplay = eventData.data;
+                }
+            }
+            
+            eventDiv.innerHTML = `
+                <div class="event-type">${eventData.type}</div>
+                <div class="event-data">${dataDisplay}</div>
+                <div class="event-timestamp">${new Date(eventData.timestamp).toLocaleTimeString()}</div>
+            `;
+            
+            logElement.insertBefore(eventDiv, logElement.firstChild);
+            
+            // Keep only last 50 events
+            while (logElement.children.length > 50) {
+                logElement.removeChild(logElement.lastChild);
+            }
+        }
+
+        // Subscribe to all events
+        [
+            'validation:start', 'validation:failed', 'validation:success',
+            'blockchain:connected', 'blockchain:submit', 'blockchain:tx:submitted',
+            'blockchain:tx:confirmed', 'registration:success', 'registration:error',
+            'test:started', 'test:completed'
+        ].forEach(event => {
+            eventBus.on(event, addEventToLog);
+        });
+
+        // Form submission handler
+        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Clear previous errors
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+            document.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
+            
+            const formData = {
+                memberID: document.getElementById('memberID').value.trim(),
+                patientName: document.getElementById('patientName').value.trim(),
+                dateOfBirth: document.getElementById('dateOfBirth').value,
+                bloodType: document.getElementById('bloodType').value
+            };
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            submitBtn.classList.add('processing');
+            
+            try {
+                const receipt = await registrationFeature.register(formData);
+                
+                // Show success
+                alert(`✅ Registration successful!\n\nTransaction Hash: ${receipt.transactionHash}\nBlock Number: ${receipt.blockNumber}`);
+                
+                // Reset form
+                document.getElementById('registrationForm').reset();
+                
+            } catch (error) {
+                if (error.type === 'ValidationError') {
+                    // Display validation errors
+                    Object.entries(error.errors).forEach(([field, errors]) => {
+                        if (errors.length > 0) {
+                            const errorElement = document.getElementById(`${field}Error`);
+                            if (errorElement) {
+                                errorElement.textContent = '⚠️ ' + errors[0];
+                            }
+                            const inputElement = document.getElementById(field);
+                            if (inputElement) {
+                                inputElement.classList.add('error');
+                            }
+                        }
+                    });
+                } else {
+                    alert(`❌ Registration failed: ${error.message}`);
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Register Patient';
+                submitBtn.classList.remove('processing');
+            }
+        });
+
+        // Test Suite
+        class TestSuite {
+            constructor() {
+                this.results = [];
+            }
+
+            async runTest(name, testFn) {
+                eventBus.emit('test:started', { name });
+                try {
+                    await testFn();
+                    this.results.push({ name, passed: true });
+                    eventBus.emit('test:completed', { name, passed: true });
+                    return true;
+                } catch (error) {
+                    this.results.push({ name, passed: false, error: error.message });
+                    eventBus.emit('test:completed', { name, passed: false, error: error.message });
+                    return false;
+                }
+            }
+
+            displayResults() {
+                const resultsDiv = document.getElementById('testResults');
+                resultsDiv.innerHTML = this.results.map(result => 
+                    `<div class="${result.passed ? 'test-pass' : 'test-fail'}">
+                        ${result.passed ? '✅' : '❌'} ${result.name}
+                        ${result.error ? `\n   └─ ${result.error}` : ''}
+                    </div>`
+                ).join('');
+            }
+
+            clear() {
+                this.results = [];
+            }
+        }
+
+        // Test implementations
+        async function runTest(testType) {
+            const suite = new TestSuite();
+            
+            switch(testType) {
+                case 'valid':
+                    await suite.runTest('Valid Registration Test', async () => {
+                        const validData = {
+                            memberID: 'MEM' + Date.now(),
+                            patientName: 'John Doe',
+                            dateOfBirth: '1990-01-01',
+                            bloodType: 'O+'
+                        };
+                        const { hasErrors } = PatientValidator.validateAll(validData);
+                        if (hasErrors) throw new Error('Valid data should not have errors');
+                    });
+                    break;
+                    
+                case 'emptyMemberID':
+                    await suite.runTest('Empty Member ID Test (Negative)', async () => {
+                        const invalidData = {
+                            memberID: '',
+                            patientName: 'John Doe',
+                            dateOfBirth: '1990-01-01',
+                            bloodType: 'O+'
+                        };
+                        const { allErrors } = PatientValidator.validateAll(invalidData);
+                        if (allErrors.memberID.length === 0) {
+                            throw new Error('Should reject empty Member ID');
+                        }
+                        // Verify the error message is correct
+                        if (!allErrors.memberID[0].includes('required')) {
+                            throw new Error('Should show "required" error message');
+                        }
+                    });
+                    break;
+                    
+                case 'invalidDate':
+                    await suite.runTest('Future Date Test (Negative)', async () => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        
+                        const invalidData = {
+                            memberID: 'MEM123456',
+                            patientName: 'John Doe',
+                            dateOfBirth: tomorrow.toISOString().split('T')[0],
+                            bloodType: 'O+'
+                        };
+                        const { allErrors } = PatientValidator.validateAll(invalidData);
+                        if (allErrors.dateOfBirth.length === 0) {
+                            throw new Error('Should reject future date of birth');
+                        }
+                    });
+                    break;
+                    
+                case 'missingFields':
+                    await suite.runTest('Missing Required Fields Test (Negative)', async () => {
+                        const invalidData = {
+                            memberID: '',
+                            patientName: '',
+                            dateOfBirth: '',
+                            bloodType: ''
+                        };
+                        const { allErrors, hasErrors } = PatientValidator.validateAll(invalidData);
+                        if (!hasErrors) {
+                            throw new Error('Should have validation errors for missing fields');
+                        }
+                        // Count total errors
+                        const totalErrors = Object.values(allErrors).flat().length;
+                        if (totalErrors < 4) {
+                            throw new Error(`Expected at least 4 errors, got ${totalErrors}`);
+                        }
+                    });
+                    break;
+                    
+                case 'duplicateMemberID':
+                    await suite.runTest('Duplicate Member ID Test (Negative)', async () => {
+                        const memberID = 'MEM999999';
+                        
+                        // First, register the member
+                        blockchain.registeredMembers.add(memberID);
+                        
+                        try {
+                            await blockchain.registerPatient(memberID, '0xtest');
+                            throw new Error('Should have rejected duplicate member ID');
+                        } catch (error) {
+                            if (!error.message.includes('already registered')) {
+                                throw new Error('Should show "already registered" error');
+                            }
+                        }
+                    });
+                    break;
+            }
+            
+            suite.displayResults();
+        }
+
+        async function runAllTests() {
+            const suite = new TestSuite();
+            
+            // Test 1: Valid registration data
+            await suite.runTest('Test 1: Valid Registration Data', async () => {
+                const validData = {
+                    memberID: 'MEM' + Date.now(),
+                    patientName: 'Jane Smith',
+                    dateOfBirth: '1985-06-15',
+                    bloodType: 'A+'
+                };
+                const { hasErrors } = PatientValidator.validateAll(validData);
+                if (hasErrors) throw new Error('Valid data should pass validation');
+            });
+            
+            // Test 2: Invalid Member ID format
+            await suite.runTest('Test 2: Invalid Member ID Format (Negative)', async () => {
+                const invalidData = {
+                    memberID: 'INVALID-ID',
+                    patientName: 'John Doe',
+                    dateOfBirth: '1990-01-01',
+                    bloodType: 'O+'
+                };
+                const { allErrors } = PatientValidator.validateAll(invalidData);
+                if (allErrors.memberID.length === 0) {
+                    throw new Error('Should reject invalid Member ID format');
+                }
+            });
+            
+            // Test 3: Empty required fields
+            await suite.runTest('Test 3: Empty Required Fields (Negative)', async () => {
+                const emptyData = {
+                    memberID: '',
+                    patientName: '',
+                    dateOfBirth: '',
+                    bloodType: ''
+                };
+                const { hasErrors } = PatientValidator.validateAll(emptyData);
+                if (!hasErrors) {
+                    throw new Error('Should reject empty required fields');
+                }
+            });
+            
+            // Test 4: Invalid patient name with numbers
+            await suite.runTest('Test 4: Invalid Name with Numbers (Negative)', async () => {
+                const invalidData = {
+                    memberID: 'MEM123456',
+                    patientName: 'John123',
+                    dateOfBirth: '1990-01-01',
+                    bloodType: 'O+'
+                };
+                const { allErrors } = PatientValidator.validateAll(invalidData);
+                if (allErrors.patientName.length === 0) {
+                    throw new Error('Should reject name with numbers');
+                }
+            });
+            
+            // Test 5: Future date of birth
+            await suite.runTest('Test 5: Future Date of Birth (Negative)', async () => {
+                const futureData = {
+                    memberID: 'MEM123456',
+                    patientName: 'John Doe',
+                    dateOfBirth: '2030-01-01',
+                    bloodType: 'B-'
+                };
+                const { allErrors } = PatientValidator.validateAll(futureData);
+                if (allErrors.dateOfBirth.length === 0) {
+                    throw new Error('Should reject future date of birth');
+                }
+            });
+            
+            // Test 6: Blockchain connection simulation
+            await suite.runTest('Test 6: Blockchain Connection', async () => {
+                const testBlockchain = new BlockchainConnector(eventBus);
+                const connected = await testBlockchain.connect();
+                if (!connected) {
+                    throw new Error('Blockchain connection should succeed');
+                }
+            });
+            
+            suite.displayResults();
+        }
+
+        // Initialize blockchain connection on load
+        window.addEventListener('load', async () => {
+            await blockchain.connect();
+            eventBus.emit('system:ready', { 
+                feature: 'Patient Registration',
+                contract: blockchain.contractAddress,
+                version: '1.0.0'
+            });
+        });
+    </script>
+</body>
+</html>

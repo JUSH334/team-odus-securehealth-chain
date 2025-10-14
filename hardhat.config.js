@@ -13,8 +13,8 @@ module.exports = {
       chainId: 31337
     },
     didlab: {
-      url: "https://eth.didlab.org", // Replace with actual RPC endpoint
-      chainId: 252501, // Replace with didlab's actual chain ID
+      url: "https://eth.didlab.org", 
+      chainId: 252501, 
       accounts: process.env.PRIVATE_KEY ? [`${process.env.PRIVATE_KEY}`] : []
     }
   },
