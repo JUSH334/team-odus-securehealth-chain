@@ -1,0 +1,26 @@
+{
+  "name": "securehealth-backend",
+  "version": "1.0.0",
+  "description": "SecureHealth Chain Patient Registration Backend with MongoDB",
+  "main": "server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "setup": "npm install && npm run mongo:start",
+    "mongo:start": "mongod --dbpath ./data/db",
+    "test": "npm run test:api",
+    "test:api": "node backend/test-api.js"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "ethers": "^5.7.2",
+    "express": "^4.21.2",
+    "mongoose": "^7.8.7"
+  },
+  "devDependencies": {
+    "axios": "^1.5.0",
+    "nodemon": "^3.0.1"
+  }
+}

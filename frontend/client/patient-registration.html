@@ -639,12 +639,46 @@
             }
         }
 
-        // Patient Registration Feature
+        // Patient Registration Feature with MongoDB Backend
         class PatientRegistrationFeature {
             constructor(eventBus, blockchain) {
                 this.eventBus = eventBus;
                 this.blockchain = blockchain;
                 this.totalRegistrations = 0;
+                this.apiUrl = 'http://localhost:3001/api';
+                this.useBackend = true; // Toggle for backend/frontend-only mode
+                this.checkBackendConnection();
+            }
+
+            async checkBackendConnection() {
+                try {
+                    const response = await fetch(`${this.apiUrl}/health`);
+                    const data = await response.json();
+                    if (data.status === 'healthy') {
+                        this.useBackend = true;
+                        console.log('✅ Connected to backend API');
+                        this.eventBus.emit('backend:connected', data);
+                        await this.loadStats();
+                    }
+                } catch (error) {
+                    console.log('⚠️ Backend not available, using local mode');
+                    this.useBackend = false;
+                }
+            }
+
+            async loadStats() {
+                if (!this.useBackend) return;
+                
+                try {
+                    const response = await fetch(`${this.apiUrl}/stats`);
+                    const data = await response.json();
+                    if (data.success) {
+                        this.totalRegistrations = data.stats.totalPatients;
+                        document.getElementById('totalRegistrations').textContent = this.totalRegistrations;
+                    }
+                } catch (error) {
+                    console.error('Failed to load stats:', error);
+                }
             }
 
             async register(patientData) {
@@ -672,38 +706,104 @@
                     memberID: patientData.memberID 
                 });
 
-                // Encrypt patient data
-                const encryptedData = this.encryptData(patientData);
+                // If backend is available, use it
+                if (this.useBackend) {
+                    try {
+                        this.eventBus.emit('backend:submit', {
+                            memberID: patientData.memberID,
+                            action: 'registerPatient'
+                        });
+
+                        const response = await fetch(`${this.apiUrl}/register`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(patientData)
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok || !result.success) {
+                            throw new Error(result.error || 'Registration failed');
+                        }
+
+                        // Emit registration success
+                        this.eventBus.emit('registration:success', {
+                            memberID: result.data.memberID,
+                            txHash: result.data.transactionHash,
+                            blockNumber: result.data.blockNumber,
+                            dbId: result.data._id
+                        });
+
+                        this.totalRegistrations++;
+                        document.getElementById('totalRegistrations').textContent = this.totalRegistrations;
+
+                        // Load recent patients
+                        await this.loadRecentPatients();
+
+                        return {
+                            transactionHash: result.data.transactionHash,
+                            blockNumber: result.data.blockNumber,
+                            memberID: result.data.memberID,
+                            dbId: result.data._id
+                        };
+
+                    } catch (error) {
+                        this.eventBus.emit('registration:error', {
+                            memberID: patientData.memberID,
+                            error: error.message
+                        });
+                        throw error;
+                    }
+                } else {
+                    // Fallback to local blockchain simulation
+                    const encryptedData = this.encryptData(patientData);
+                    
+                    try {
+                        this.eventBus.emit('blockchain:submit', {
+                            memberID: patientData.memberID,
+                            action: 'registerPatient'
+                        });
+
+                        const receipt = await this.blockchain.registerPatient(
+                            patientData.memberID,
+                            encryptedData
+                        );
+
+                        this.eventBus.emit('registration:success', {
+                            memberID: patientData.memberID,
+                            txHash: receipt.transactionHash,
+                            blockNumber: receipt.blockNumber
+                        });
+
+                        this.totalRegistrations++;
+                        document.getElementById('totalRegistrations').textContent = this.totalRegistrations;
+
+                        return receipt;
+                    } catch (error) {
+                        this.eventBus.emit('registration:error', {
+                            memberID: patientData.memberID,
+                            error: error.message
+                        });
+                        throw error;
+                    }
+                }
+            }
+
+            async loadRecentPatients() {
+                if (!this.useBackend) return;
                 
                 try {
-                    // Submit to blockchain
-                    this.eventBus.emit('blockchain:submit', {
-                        memberID: patientData.memberID,
-                        action: 'registerPatient'
-                    });
-
-                    const receipt = await this.blockchain.registerPatient(
-                        patientData.memberID,
-                        encryptedData
-                    );
-
-                    // Emit registration success
-                    this.eventBus.emit('registration:success', {
-                        memberID: patientData.memberID,
-                        txHash: receipt.transactionHash,
-                        blockNumber: receipt.blockNumber
-                    });
-
-                    this.totalRegistrations++;
-                    document.getElementById('totalRegistrations').textContent = this.totalRegistrations;
-
-                    return receipt;
+                    const response = await fetch(`${this.apiUrl}/patients?limit=5`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.data.length > 0) {
+                        // Update UI with recent patients if needed
+                        console.log('Recent patients loaded:', data.data);
+                    }
                 } catch (error) {
-                    this.eventBus.emit('registration:error', {
-                        memberID: patientData.memberID,
-                        error: error.message
-                    });
-                    throw error;
+                    console.error('Failed to load recent patients:', error);
                 }
             }
 
