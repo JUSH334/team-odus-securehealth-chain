@@ -1,69 +1,79 @@
 # Project Proposal
 
 ## 1. Title & One-Line Value Proposition
-**SecureHealth Chain** — Privacy-preserving healthcare data sharing with custodian-managed access control for audit transparency.
+**SecureHealth Chain** — Blockchain-based insurance claim and medication transaction platform with custodian-verified processing for transparent healthcare payments.
 
 ## 2. Problem & Stakeholders
-Healthcare data sharing today suffers from fragmented systems where patients lack control over their medical records, providers struggle with interoperability, and researchers cannot access aggregated data without compromising privacy. Patients need consent management, providers require secure data exchange, auditors need compliance verification, and researchers benefit from privacy-preserved analytics—all while maintaining HIPAA compliance and patient trust.
+Healthcare insurance and medication transactions today involve complex multi-party interactions with significant inefficiencies: claim denials lack transparency, prior authorization delays critical treatments and medication pricing varies wildly between providers. Health providers need streamlined claim submission and instant verification, custodians (insurance companies/PBMs) require automated adjudication, and patients deserve transparent pricing, real-time coverage verification, and control over their insurance data—all while maintaining HIPAA compliance and reducing administrative overhead.
 
 ## 3. Research Alignment
-Theme: Healthcare privacy + custodian repository.
-This extends on privacy-preserving healthcare systems by implementing custodian-mediated access patterns with audit trails to protect individual patient data.
+Theme: Healthcare transactions + custodian verification. This project explores blockchain's potential to create transparent, auditable insurance claim processing and medication authorization systems with custodian-mediated verification patterns that reduce fraud while accelerating legitimate transactions.
 
 ## 4. Platform & Rationale
 Choice: HardHat
-HardHat provides the ideal foundation for healthcare data sharing through its native support for organizational roles, private data collections for PHI isolation, fine-grained endorsement policies for consent management, and built-in audit capabilities—all essential for HIPAA compliance and multi-stakeholder healthcare environments.
+HardHat provides the ideal foundation for healthcare financial transactions through its native support for organizational roles (providers, custodians, patients), private data collections for sensitive pricing/coverage data, smart contract-based claim adjudication logic, and immutable audit trails—essential for regulatory compliance and multi-party trust in insurance transactions.
 
 ## 5. MVP Features + Stretch
 **MVP (Weeks 6-10):**
-- Patient/Provider read/write access with role-based actions
-- Custodian gateway that cryptographically signs and logs all access requests with chain audit events
-- Basic consent management UI showing active permissions and access history
+- Insurance claim submission by providers
+- Medication authorization requests while cross referencing against patient's plan
+- Custodian verification gateway that validates coverage, processes claims, and logs all         decisions
+- Patient portal showing claim status, medication approvals, and out-of-pocket costs
+- Basic smart contracts for claim adjudication rules and formulary management
 
 **Stretch (Weeks 11-13):**
-- Private Data Collections for PHI storage with only hashes on-chain, supporting consent revocation workflows
-- Analytics dashboard displaying differentially private population health metrics with configurable epsilon values
+- Price transparency dashboard showing negotiated rates across providers
+- Multi-custodian support for coordination of benefits scenarios
 
 ## 6. Architecture Sketch
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     User Interface Layer                     │
-├──────────────┬────────────────┬──────────────┬─────────────┤
-│Patient Portal│Provider Portal │Auditor View  │Analytics    │
-└──────┬───────┴───────┬────────┴──────┬───────┴─────┬───────┘
-       │               │               │             │
-┌──────▼───────────────▼───────────────▼─────────────▼───────┐
-│                  Custodian Gateway (Node.js)                │
-│  • Identity verification (VCs)                              │
-│  • Request signing & validation                             │
-│  • LDP noise injection for aggregates                       │
-└──────────────────────┬──────────────────────────────────────┘
+├──────────────┬────────────────┬───────────────────────────── ┤
+│Provider Portal│Patient Portal  │Custodian Dashboard          │
+│•Submit claims │•View claims    │•Process authorizations      │
+│•Check eligib. │•Check coverage │•Manage formularies          │
+│•Prior auth    │•Medication hist│                             │
+└──────┬───────┴───────┬────────┴──────┬──────────────────────┘
+       │               │               │
+┌──────▼───────────────▼───────────────▼──────────────────────┐
+│              Custodian Verification Gateway                  │
+│  • Coverage verification & eligibility checks                │
+│  • Claim adjudication logic execution                        │
+│  • Prior authorization processing                            │
+│  • Formulary management                                      │
+└──────────────────────┬───────────────────────────────────────┘
                        │
-┌──────────────────────▼──────────────────────────────────────┐
-│              Hyperledger Fabric / NeuroBlock                │
-├──────────────────────────────────────────────────────────────┤
-│  Chaincode Components:                                       │
-│  • ConsentManager: Grant/revoke patient permissions          │
-│  • EncounterRegistry: Provider data submissions              │
-│  • AuditLogger: Immutable access event recording             │
-│  • PrivateDataCollection: PHI storage (hash on-chain)        │
-├──────────────────────────────────────────────────────────────┤
-│  Organizations: Hospital_A | Hospital_B | Custodian | Auditor│
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────▼───────────────────────────────────────┐
+│                    HardHat Blockchain                         │
+├───────────────────────────────────────────────────────────────┤
+│  Chaincode Components:                                        │
+│  • ClaimProcessor: Submit, adjudicate, approve/deny claims    │
+│  • MedicationAuth: Formulary checks, prior auth workflows     │
+│  • CoverageManager: Patient eligibility & benefit tracking    │
+│  • PaymentLedger: Track payments, copays, deductibles         │
+│  • AuditLogger: Immutable transaction history                 │
+├───────────────────────────────────────────────────────────────┤
+│  Organizations: Provider_Network | Custodian_Insurer |        │
+│                 Custodian_PBM | Patient_Collective            │
+└───────────────────────────────────────────────────────────────┘
                        │
-┌──────────────────────▼──────────────────────────────────────┐
-│            Data Sources & External Systems                   │
-│  • Synthetic EHR Generator (CSV/JSON)                        │
-│  • Identity Provider (Mock VCs for providers/patients)       │
-└──────────────────────────────────────────────────────────────┘
-
-Data Flow: User Request → Gateway (VC check) → Sign → Chaincode → 
-          Audit Event → Response (with DP noise if aggregate)
+┌──────────────────────▼─────────────────────────────────────── ┐
+│            External Integrations & Data Sources               │
+│  • NCPDP standards for pharmacy transactions                  │       
+│  • Drug formulary databases (mock FDA Orange Book)            │
+│  • Provider credential verification (mock NPPES)              │
+└───────────────────────────────────────────────────────────────┘
 ```
 
+Transaction Flow: 
+Provider submits claim → Gateway validates coverage → 
+Smart contract applies rules → Custodian approves/denies → 
+Payment initiated → Patient notified → Audit recorded
+
 ## 7. Security & Privacy Requirements
-Our system implements defense-in-depth security through verifiable credential-based authentication, ensuring only authorized healthcare providers and registered patients can interact with the system. All write operations require cryptographic signatures verified by the custodian gateway before execution. We enforce strict endorsement policies requiring consensus for consent changes. Private Data Collections isolate PHI within authorized organizations while maintaining hash-based integrity on the public ledger. Input validation prevents injection attacks, rate limiting mitigates DoS attempts, and comprehensive audit logging provides forensic capabilities for compliance verification.
+Our system implements comprehensive security for financial healthcare data through authentication for all user types, with providers verified through NPI registry integration and patients authenticated via insurance member IDs. All transactions require cryptographic signatures with custodian co-signing for amounts exceeding thresholds. We implement role-based access control ensuring providers only see their submitted claims, custodians access only their covered members, and patients view only their own records. Sensitive pricing data and negotiated rates are stored in Private Data Collections visible only to contracting parties. Smart contract-enforced business rules prevent unauthorized claim modifications, duplicate submissions, and ensure regulatory compliance with automatic HIPAA-compliant audit logging of all access attempts and modifications.
 
 ## 8. Milestones (Weeks 6-14)
 - **W6:** Environment & Skeleton
@@ -78,17 +88,16 @@ Our system implements defense-in-depth security through verifiable credential-ba
 
 ## 9. Team & Roles + Logistics
 **Team Odus Roles:**
-- **PM/Scrum Lead:** Sprint planning, stakeholder demos, risk tracking
-- **Chaincode Developer:** Fabric smart contracts, endorsement policies
-- **Backend Developer:** Custodian gateway, VC integration, DP implementation  
-- **Frontend Developer:** Patient/provider portals, analytics dashboard
-- **DevOps/QA:** CI/CD pipeline, testing framework, performance monitoring
+- PM/Scrum Lead: Sprint planning, stakeholder demos, regulatory compliance tracking
+- Chaincode Developer: Smart contracts for claims, medications, payment logic
+- Backend Developer: Custodian gateway, eligibility APIs, adjudication engine
+- Frontend Developer: Provider portal, patient dashboard, custodian interface
+- DevOps/QA: Multi-org network setup, integration testing, performance optimization
 
 **Logistics:**
 - Standup: Tuesdays/Thursdays 6PM via Discord
 - Repo: https://github.com/JUSH334/team-odus-securehealth-chain.git
 
 ## 10. Top Risks & Mitigations
-- **Risk 1: Realistic healthcare data complexity** → Use open synthetic EHR generator (Synthea) with simplified encounter types; focus on 3 data fields initially (diagnosis, medication, vitals)
-- **Risk 2: Differential privacy parameter tuning** → Start with well-studied ε=1.0 for counting queries; consult DP literature for healthcare precedents; implement sensitivity analysis tool
-- **Risk 3: Multi-org Fabric setup complexity** → Begin with 2-org minimum viable network; use existing Fabric samples as foundation; allocate extra week for environment debugging
+- Risk 1: Complex insurance business logic → Start with simplified claim types (office visits, generic medications); implement basic copay/deductible calculations first.
+- Risk 2: Regulatory compliance complexity → Focus on core HIPAA requirements (access controls, audit logs); mock regulatory reporting rather than full implementation.

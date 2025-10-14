@@ -1,0 +1,84 @@
+
+# Week 7 - Vertical Slice Architecture
+
+## Completed End-to-End Path: Patient Registration
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    CLI CLIENT                            │
+│              (scripts/patient-cli.js)                    │
+│                                                          │
+│  1. User runs: node scripts/patient-cli.js              │
+│  2. Selects: "1. Register New Patient"                  │
+│  3. Enters: Member ID, Name, DOB, Phone                 │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼ [Call registerPatient()]
+┌─────────────────────────────────────────────────────────┐
+│                  SMART CONTRACT                          │
+│            (contracts/PatientRegistry.sol)               │
+│                                                          │
+│  Function: registerPatient(memberID, encryptedData)     │
+│  - Validates inputs                                     │
+│  - Creates patient struct                               │
+│  - Updates mappings                                     │
+│  - Emits PatientRegistered event                       │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼ [State Change + Event]
+┌─────────────────────────────────────────────────────────┐
+│                  BLOCKCHAIN STATE                        │
+│                  (Hardhat Network)                       │
+│                                                          │
+│  BEFORE:                                                │
+│  - patients[0x123...] = empty                          │
+│  - totalPatients = 0                                   │
+│                                                          │
+│  AFTER:                                                 │
+│  - patients[0x123...] = {memberID: "MEM123456", ...}   │
+│  - totalPatients = 1                                   │
+│  - Event: PatientRegistered(addr, memberID, timestamp)  │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼ [Read-back Verification]
+┌─────────────────────────────────────────────────────────┐
+│                    CLI CLIENT                            │
+│                                                          │
+│  Calls: getPatient(address)                            │
+│  Verifies: Registration successful                      │
+│  Shows: Transaction hash, Block number                  │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Completed Components (Highlighted):
+- **CLI Client** - Patient registration interface
+- **Smart Contract** - PatientRegistry.sol with registerPatient()
+- **State Change** - Patient data stored in blockchain
+- **Event Emission** - PatientRegistered event logged
+- **Read-back** - getPatient() verification
+
+## Evidence of State Change:
+```javascript
+// State before registration:
+patients[0xf39Fd6e5...] = null
+totalPatients = 0
+
+// Transaction:
+registerPatient("MEM123456", "0xencrypted...")
+
+// State after registration:
+patients[0xf39Fd6e5...] = {
+    patientAddress: "0xf39Fd6e5...",
+    memberID: "MEM123456",
+    encryptedPersonalData: "0xencrypted...",
+    registrationTimestamp: 1699564800,
+    isActive: true
+}
+totalPatients = 1
+
+// Event emitted:
+event PatientRegistered(
+    patientAddress: "0xf39Fd6e5...",
+    memberID: "MEM123456",
+    timestamp: 1699564800
+)
