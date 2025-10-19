@@ -1,0 +1,10 @@
+{
+  "network": "didlab",
+  "contractName": "PatientRegistry",
+  "address": "0x959c23cd86c5dBB7aE5706AD2c6F875a97697F86",
+  "deployer": "0xFB3C61Dcc2dF6800C62E7ba2bcA5e9dd7d42f2F7",
+  "deploymentTime": "2025-10-19T05:28:45.061Z",
+  "transactionHash": "0x71854e5ee8e3d504230ab006103a095839668157902c1cae8a6fb1e52249c10b",
+  "gasPrice": "1000000000",
+  "status": "confirmed"
+}

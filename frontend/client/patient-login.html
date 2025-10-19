@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureHealth Chain - Patient Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 480px;
+            padding: 48px;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        .login-method {
+            margin-bottom: 24px;
+        }
+
+        .method-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 4px;
+            background: #f1f5f9;
+            border-radius: 12px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #475569;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .wallet-section {
+            text-align: center;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .wallet-address {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #64748b;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 16px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 24px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 16px;
+            position: relative;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 24px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>🏥 SecureHealth Chain</h1>
+            <p>Patient Portal Login</p>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+
+        <div class="method-tabs">
+            <button class="tab active" onclick="switchTab('wallet')">Wallet Login</button>
+            <button class="tab" onclick="switchTab('memberid')">Member ID Login</button>
+        </div>
+
+        <!-- Wallet Login Tab -->
+        <div id="walletTab" class="tab-content active">
+            <div class="wallet-section">
+                <p style="color: #475569; margin-bottom: 16px;">Connect your wallet to access your patient portal</p>
+                <button class="btn-secondary" onclick="connectWallet()">
+                    🔗 Connect MetaMask Wallet
+                </button>
+                <div id="walletInfo" style="display: none;">
+                    <p style="color: #10b981; font-weight: 600; margin-bottom: 8px;">✓ Wallet Connected</p>
+                    <div class="wallet-address" id="walletAddress"></div>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="loginWithWallet()" disabled id="walletLoginBtn">
+                <span id="walletLoginText">Login with Wallet</span>
+                <div class="loading-spinner" id="walletSpinner"></div>
+            </button>
+        </div>
+
+        <!-- Member ID Login Tab -->
+        <div id="memberidTab" class="tab-content">
+            <form onsubmit="loginWithMemberID(event)">
+                <div class="form-group">
+                    <label for="memberID">Member ID</label>
+                    <input 
+                        type="text" 
+                        id="memberID" 
+                        placeholder="Enter your Member ID (e.g., MEM123456)"
+                        required
+                        pattern="MEM[0-9]{6}"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="dob">Date of Birth</label>
+                    <input 
+                        type="date" 
+                        id="dob" 
+                        required
+                    >
+                </div>
+                <button type="submit" class="btn-primary">
+                    <span id="memberLoginText">Login</span>
+                    <div class="loading-spinner" id="memberSpinner"></div>
+                </button>
+            </form>
+        </div>
+
+        <div class="register-link">
+            Don't have an account? <a href="patient-registration.html">Register here</a>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const PATIENT_REGISTRY_ADDRESS = '0xcBaAa7A34Dd5F04a144c278C28E222331B123b41'; // Your Didlab contract
+        const BACKEND_URL = 'http://localhost:3001';
+        
+        // Contract ABI (minimal for login)
+        const REGISTRY_ABI = [
+            "function getPatient(address patientAddress) view returns (string memberID, uint256 registrationTimestamp, bool isActive, address assignedProvider)",
+            "function memberIDToAddress(string memberID) view returns (address)",
+            "function patients(address) view returns (address patientAddress, string memberID, string encryptedPersonalData, uint256 registrationTimestamp, bool isActive, address assignedProvider)"
+        ];
+
+        let currentAccount = null;
+        let provider = null;
+        let signer = null;
+        let contract = null;
+
+        // Initialize
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                
+                // Check if already connected
+                const accounts = await provider.listAccounts();
+                if (accounts.length > 0) {
+                    currentAccount = accounts[0];
+                    updateWalletUI(true);
+                }
+            } else {
+                showStatus('MetaMask not detected. Please install MetaMask to use wallet login.', 'error');
+            }
+        });
+
+        // Tab switching
+        function switchTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'wallet') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('walletTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('memberidTab').classList.add('active');
+            }
+            
+            // Clear status messages
+            hideStatus();
+        }
+
+        // Connect Wallet
+        async function connectWallet() {
+            try {
+                if (!window.ethereum) {
+                    showStatus('Please install MetaMask!', 'error');
+                    return;
+                }
+
+                showStatus('Connecting wallet...', 'info');
+                
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                currentAccount = accounts[0];
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                
+                // Initialize contract
+                contract = new ethers.Contract(PATIENT_REGISTRY_ADDRESS, REGISTRY_ABI, signer);
+                
+                updateWalletUI(true);
+                showStatus('Wallet connected successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+                showStatus('Failed to connect wallet', 'error');
+            }
+        }
+
+        // Update Wallet UI
+        function updateWalletUI(connected) {
+            const walletInfo = document.getElementById('walletInfo');
+            const walletLoginBtn = document.getElementById('walletLoginBtn');
+            const walletAddress = document.getElementById('walletAddress');
+            
+            if (connected && currentAccount) {
+                walletInfo.style.display = 'block';
+                walletAddress.textContent = currentAccount;
+                walletLoginBtn.disabled = false;
+            } else {
+                walletInfo.style.display = 'none';
+                walletLoginBtn.disabled = true;
+            }
+        }
+
+        // Login with Wallet
+        async function loginWithWallet() {
+            if (!currentAccount || !contract) {
+                showStatus('Please connect your wallet first', 'error');
+                return;
+            }
+
+            const walletLoginText = document.getElementById('walletLoginText');
+            const walletSpinner = document.getElementById('walletSpinner');
+            
+            try {
+                walletLoginText.style.display = 'none';
+                walletSpinner.style.display = 'block';
+                
+                showStatus('Verifying patient registration...', 'info');
+                
+                // Check if patient is registered
+                const patientData = await contract.getPatient(currentAccount);
+                
+                if (!patientData.isActive) {
+                    showStatus('No patient record found for this wallet. Please register first.', 'error');
+                    return;
+                }
+                
+                // Store session data
+                const sessionData = {
+                    wallet: currentAccount,
+                    memberID: patientData.memberID,
+                    registrationTime: patientData.registrationTimestamp.toString(),
+                    loginTime: new Date().toISOString()
+                };
+                
+                sessionStorage.setItem('patientSession', JSON.stringify(sessionData));
+                
+                showStatus('Login successful! Redirecting...', 'success');
+                
+                // Redirect to dashboard
+                setTimeout(() => {
+                    window.location.href = 'patient-dashboard-billing.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Login failed:', error);
+                showStatus('Login failed. Please check your connection and try again.', 'error');
+            } finally {
+                walletLoginText.style.display = 'inline';
+                walletSpinner.style.display = 'none';
+            }
+        }
+
+        // Login with Member ID
+        async function loginWithMemberID(event) {
+            event.preventDefault();
+            
+            const memberID = document.getElementById('memberID').value;
+            const dob = document.getElementById('dob').value;
+            const memberLoginText = document.getElementById('memberLoginText');
+            const memberSpinner = document.getElementById('memberSpinner');
+            
+            try {
+                memberLoginText.style.display = 'none';
+                memberSpinner.style.display = 'block';
+                
+                showStatus('Verifying credentials...', 'info');
+                
+                // Check with backend
+                const response = await fetch(`${BACKEND_URL}/api/patients/${memberID}`);
+                const data = await response.json();
+                
+                if (!data.success || !data.patient) {
+                    showStatus('Invalid Member ID or not registered', 'error');
+                    return;
+                }
+                
+                // Verify DOB matches (simplified - in production, encrypt/hash)
+                const patientDOB = new Date(data.patient.dateOfBirth).toISOString().split('T')[0];
+                if (patientDOB !== dob) {
+                    showStatus('Invalid credentials', 'error');
+                    return;
+                }
+                
+                // Store session
+                const sessionData = {
+                    memberID: memberID,
+                    patientName: data.patient.patientName,
+                    wallet: data.patient.walletAddress,
+                    loginTime: new Date().toISOString()
+                };
+                
+                sessionStorage.setItem('patientSession', JSON.stringify(sessionData));
+                
+                showStatus('Login successful! Redirecting...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'patient-dashboard-billing.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showStatus('Login failed. Backend service may be unavailable.', 'error');
+                
+                // Fallback to blockchain-only verification
+                if (window.ethereum) {
+                    showStatus('Attempting blockchain verification...', 'info');
+                    // Could implement blockchain-based member ID lookup here
+                }
+            } finally {
+                memberLoginText.style.display = 'inline';
+                memberSpinner.style.display = 'none';
+            }
+        }
+
+        // Status message functions
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message status-${type}`;
+            statusEl.style.display = 'block';
+        }
+
+        function hideStatus() {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.style.display = 'none';
+        }
+    </script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+</body>
+</html>
