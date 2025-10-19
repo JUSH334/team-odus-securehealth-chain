@@ -22,7 +22,7 @@ async function main() {
         console.log("✅ Connected as:", signer.address);
 
         // Use the deployed contract address (update if different)
-        const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+        const contractAddress = "0x959c23cd86c5dBB7aE5706AD2c6F875a97697F86";
         const contract = new ethers.Contract(contractAddress, PATIENT_REGISTRY_ABI, signer);
 
         // 2. PREPARE TEST DATA
