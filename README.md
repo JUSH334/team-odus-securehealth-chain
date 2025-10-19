@@ -292,9 +292,6 @@ cd backend
 npm run dev
 ```
 
-## 📈 Performance
+Recording Demo:
 
-- **Transaction Confirmation**: ~5-15 seconds on localhost
-- **Gas Optimization**: Optimized for low gas usage
-- **MongoDB Queries**: Indexed for fast lookups
-- **Pagination**: Efficient pagination for large datasets
+https://www.youtube.com/watch?v=E26Jrj1GDpk
