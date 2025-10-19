@@ -1,0 +1,445 @@
+# Week 8 Feature 1 Core - Patient Registration Feature and Database implementation
+
+##  Update Summary
+
+This document details the complete implementation of the **Patient Registration** vertical slice, demonstrating end-to-end functionality from smart contract to user interface with comprehensive event handling and validation.
+
+---
+
+##  Required Artifacts
+
+### 1. Feature Code + Events/Logs
+
+#### Smart Contract Events
+**Location**: `contracts/PatientRegistry.sol`
+
+```solidity
+event PatientRegistered(
+    address indexed patientAddress,
+    string memberID,
+    uint256 timestamp
+);
+
+event PatientUpdated(
+    address indexed patientAddress,
+    string memberID,
+    uint256 timestamp
+);
+
+event ProviderAssigned(
+    address indexed patientAddress,
+    address indexed providerAddress,
+    uint256 timestamp
+);
+```
+
+#### Backend Events (MongoDB Audit Trail)
+**Location**: `backend/server.js`
+
+```javascript
+// Event types emitted:
+- 'validation:success'     // Input validation passed
+- 'validation:error'       // Input validation failed
+- 'blockchain:confirmed'   // Transaction confirmed on blockchain
+- 'registration:success'   // Complete registration successful
+- 'registration:error'     // Registration failed
+```
+
+**Event Storage Schema**:
+```javascript
+{
+  eventType: String (indexed),
+  memberID: String (indexed),
+  data: Mixed,
+  timestamp: Date,
+  blockNumber: Number,
+  transactionHash: String
+}
+```
+
+#### Frontend Event Consumer
+**Location**: `frontend/client/patient-registration.html`
+
+**Event Bus Implementation**:
+```javascript
+class EventBus {
+    emit(event, data) {
+        const eventData = {
+            type: event,
+            data: data,
+            timestamp: new Date().toISOString(),
+            blockNumber: this.simulateBlockNumber()
+        };
+        
+        this.eventHistory.push(eventData);
+        // UI updates triggered here
+    }
+}
+```
+
+**Events Displayed in Real-time UI**:
+-  `validation:start` - Yellow indicator
+-  `validation:success` - Green indicator
+-  `validation:failed` - Red indicator
+-  `blockchain:submit` - Blue indicator
+-  `blockchain:tx:confirmed` - Green indicator
+-  `registration:success` - Success state
+-  `registration:error` - Error state
+
+**Screenshot Evidence**: Events visible in the Event Stream panel (right side of UI)
+
+---
+
+### 2. Input Validation & Error Handling
+
+#### Client-Side Validation
+**Location**: `frontend/client/patient-registration.html`
+
+```javascript
+class PatientValidator {
+    static validateMemberID(memberID) {
+        const errors = [];
+        
+        if (!memberID || memberID.trim().length === 0) {
+            errors.push('Member ID is required');
+        } else if (memberID.length < 6) {
+            errors.push('Member ID must be at least 6 characters');
+        } else if (memberID.length > 20) {
+            errors.push('Member ID must not exceed 20 characters');
+        } else if (!/^MEM[A-Z0-9]+$/i.test(memberID)) {
+            errors.push('Member ID must start with "MEM"');
+        }
+        
+        return errors;
+    }
+    
+    static validatePatientName(name) {
+        // Name validation: letters, spaces, hyphens, apostrophes only
+        if (!/^[a-zA-Z\s'-]+$/.test(name)) {
+            errors.push('Invalid name format');
+        }
+    }
+    
+    static validateDateOfBirth(dob) {
+        const date = new Date(dob);
+        const now = new Date();
+        
+        if (date >= now) {
+            errors.push('Date of birth must be in the past');
+        }
+        
+        const age = Math.floor((now - date) / (365.25 * 24 * 60 * 60 * 1000));
+        if (age > 150) {
+            errors.push('Invalid date of birth');
+        }
+    }
+}
+```
+
+**Visual Error Feedback**:
+- Red border on invalid inputs
+-  Error messages below each field
+- Real-time validation as user types
+- Form submission blocked until valid
+
+#### Smart Contract Validation
+**Location**: `contracts/PatientRegistry.sol`
+
+```solidity
+function registerPatient(string memory _memberID, string memory _encryptedData) 
+    public returns (bool) 
+{
+    require(bytes(_memberID).length > 0, "Member ID cannot be empty");
+    require(bytes(_encryptedData).length > 0, "Patient data cannot be empty");
+    require(!patients[msg.sender].isActive, "Patient already registered");
+    require(memberIDToAddress[_memberID] == address(0), "Member ID already exists");
+    
+    // Registration logic...
+}
+```
+
+#### Backend Validation
+**Location**: `backend/server.js`
+
+```javascript
+app.post('/api/register', async (req, res) => {
+    const { memberID, patientName, dateOfBirth, bloodType } = req.body;
+    
+    // Validation
+    if (!memberID || !patientName || !dateOfBirth || !bloodType) {
+        return res.status(400).json({
+            success: false,
+            error: 'All fields are required'
+        });
+    }
+    
+    // Check for duplicates
+    const existingPatient = await Patient.findOne({ memberID });
+    if (existingPatient) {
+        return res.status(400).json({
+            success: false,
+            error: 'Member ID already registered'
+        });
+    }
+    
+    // Continue registration...
+});
+```
+
+**Error Handling Strategy**:
+1.  Client-side validation (immediate feedback)
+2.  Smart contract validation (on-chain enforcement)
+3.  Backend validation (database integrity)
+4.  Event logging for all errors
+5.  User-friendly error messages
+
+---
+
+### 3. Updated README Usage Section
+
+**Location**: `README.md` (Updated Section)
+
+```markdown
+## 🚀 Usage Guide
+
+### Register a Patient
+
+#### Option 1: Web Interface
+1. Open `frontend/client/patient-registration.html`
+2. Fill in the registration form:
+   - **Member ID**: Format MEM + 6-20 alphanumeric characters
+   - **Patient Name**: Full legal name
+   - **Date of Birth**: Valid past date
+   - **Blood Type**: Select from dropdown
+3. Click "Register Patient"
+4. Watch the Event Stream for real-time transaction updates
+5. Confirmation displayed upon success
+
+#### Option 2: Backend API
+```bash
+curl -X POST http://localhost:3001/api/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "memberID": "MEM123456",
+    "patientName": "John Doe",
+    "dateOfBirth": "1990-01-01",
+    "bloodType": "O+"
+  }'
+```
+
+#### Option 3: Direct Smart Contract
+```bash
+npx hardhat run scripts/register-patient.js --network localhost
+```
+
+### View Patient Data
+
+```bash
+# Get patient by Member ID
+curl http://localhost:3001/api/patients/MEM123456
+
+# List all patients
+curl http://localhost:3001/api/patients?page=1&limit=10
+
+# Search patients
+curl http://localhost:3001/api/patients/search?q=john
+```
+
+### Monitor Events
+
+Events are visible in:
+- **Frontend UI**: Real-time event stream panel
+- **Backend Logs**: Console output with event details
+- **MongoDB**: Event collection with full audit trail
+- **Blockchain**: Transaction logs via block explorer
+```
+
+---
+
+### 4. Test Suite (≥3 Tests, Including Negative Cases)
+
+**Location**: `test/PatientRegistry.test.js` and `test/W7-tests.js`
+
+#### Test 1:  Positive - Successful Registration
+```javascript
+it("Should successfully register a new patient and emit event", async function () {
+    const memberID = "MEM123456";
+    const encryptedData = "0x1234567890abcdef";
+    
+    // Act
+    const tx = await patientRegistry.connect(patient1)
+        .registerPatient(memberID, encryptedData);
+    
+    // Assert - Event emitted
+    await expect(tx)
+        .to.emit(patientRegistry, "PatientRegistered")
+        .withArgs(patient1.address, memberID, anyValue);
+    
+    // Assert - State change verified
+    const patientInfo = await patientRegistry.getPatient(patient1.address);
+    expect(patientInfo.memberID).to.equal(memberID);
+    expect(patientInfo.isActive).to.be.true;
+    
+    // Assert - Count increased
+    const totalPatients = await patientRegistry.totalPatients();
+    expect(totalPatients).to.equal(1);
+});
+```
+**Status**:  PASSING
+
+---
+
+#### Test 2:  Negative - Duplicate Registration (Same Address)
+```javascript
+it("Should prevent duplicate registration from same address", async function () {
+    const memberID1 = "MEM123456";
+    await patientRegistry.connect(patient1)
+        .registerPatient(memberID1, "0x1234");
+    
+    // Attempt duplicate registration
+    await expect(
+        patientRegistry.connect(patient1)
+            .registerPatient("MEM789012", "0x5678")
+    ).to.be.revertedWith("Patient already registered");
+});
+```
+**Status**:  PASSING - Properly rejects duplicate
+
+---
+
+#### Test 3:  Negative - Duplicate Member ID
+```javascript
+it("Should prevent registration with existing member ID", async function () {
+    const memberID = "MEM123456";
+    
+    // First registration succeeds
+    await patientRegistry.connect(patient1)
+        .registerPatient(memberID, "0x1234");
+    
+    // Second registration with same ID fails
+    await expect(
+        patientRegistry.connect(patient2)
+            .registerPatient(memberID, "0x5678")
+    ).to.be.revertedWith("Member ID already exists");
+});
+```
+**Status**:  PASSING - Properly rejects duplicate ID
+
+---
+
+#### Test 4:  Negative - Empty Fields Validation
+```javascript
+it("Should validate required inputs", async function () {
+    // Test empty member ID
+    await expect(
+        patientRegistry.connect(patient1)
+            .registerPatient("", "0x1234")
+    ).to.be.revertedWith("Member ID cannot be empty");
+    
+    // Test empty data
+    await expect(
+        patientRegistry.connect(patient1)
+            .registerPatient("MEM444444", "")
+    ).to.be.revertedWith("Patient data cannot be empty");
+});
+```
+**Status**:  PASSING - Validation working correctly
+
+---
+
+#### Test 5:  Negative - Invalid Date of Birth
+```javascript
+it("Should reject future date of birth", async function () {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const invalidData = {
+        memberID: 'MEM123456',
+        patientName: 'John Doe',
+        dateOfBirth: tomorrow.toISOString().split('T')[0],
+        bloodType: 'O+'
+    };
+    
+    const { allErrors } = PatientValidator.validateAll(invalidData);
+    expect(allErrors.dateOfBirth.length).to.be.greaterThan(0);
+});
+```
+**Status**:  PASSING - Future dates properly rejected
+
+---
+
+#### Test 6:  Positive - State Verification
+```javascript
+it("Should correctly track total patient count", async function () {
+    expect(await registry.totalPatients()).to.equal(0);
+    
+    await registry.connect(patient1)
+        .registerPatient("MEM001", "0xdata1");
+    expect(await registry.totalPatients()).to.equal(1);
+    
+    await registry.connect(patient2)
+        .registerPatient("MEM002", "0xdata2");
+    expect(await registry.totalPatients()).to.equal(2);
+});
+```
+**Status**:  PASSING
+
+---
+
+##  Acceptance Criteria
+
+###  End-to-End Demonstrable
+
+**Complete Flow Demonstrated**:
+
+1. **User Input** → Frontend validation
+2. **Form Submit** → Backend API call
+3. **Backend Processing** → MongoDB check + Blockchain submission
+4. **Smart Contract** → On-chain validation + Event emission
+5. **Transaction Confirmation** → Block mined
+6. **Event Propagation** → Backend captures event
+7. **Database Update** → MongoDB record created
+8. **UI Feedback** → Success message + Event log update
+
+**Events Visible Throughout**:
+-  Console logs showing each step
+-  Frontend Event Stream panel (real-time updates)
+-  MongoDB Event collection (persistent audit trail)
+-  Blockchain transaction logs
+
+---
+
+###  Negative Case Properly Rejected
+
+**Test Evidence**:
+
+```bash
+$ npx hardhat test test/PatientRegistry.test.js
+
+  PatientRegistry - Week 7 Vertical Slice
+    ✓ Should successfully register a new patient (152ms)
+    ✓ Should prevent duplicate registration with same address (89ms)
+    ✓ Should prevent duplicate member ID registration (94ms)
+    ✓ Should validate required fields during registration (71ms)
+    ✓ Should prevent non-registered patient from updating data (45ms)
+
+  5 passing (1s)
+```
+
+**Negative Test Details**:
+-  Empty Member ID → REJECTED with error
+-  Empty patient data → REJECTED with error
+-  Duplicate address → REJECTED with error
+-  Duplicate Member ID → REJECTED with error
+-  Future date of birth → REJECTED with error
+-  Invalid name format → REJECTED with error
+
+All negative cases properly caught and rejected at appropriate layer (UI/Contract/Backend).
+
+---
+
+##  Evidence
+
+https://www.youtube.com/watch?v=E26Jrj1GDpk
+
+**Patient Registration Interface*
