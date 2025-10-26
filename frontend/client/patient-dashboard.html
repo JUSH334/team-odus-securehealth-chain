@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SecureHealth Chain - Patient Dashboard</title>
+    <!-- Ethers.js Library for Blockchain Integration -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -664,6 +666,9 @@
                 <p>Decentralized Healthcare Payment Platform</p>
             </div>
             <div class="header-right">
+                <button class="logout-btn" onclick="connectWallet()" id="connectWalletBtn" style="margin-right: 10px; background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: white;">
+                    🔗 Connect Wallet
+                </button>
                 <div class="user-info">
                     <div class="user-name" id="userName">John Doe</div>
                     <div class="user-id" id="userID">MEM123456ABC</div>
@@ -883,7 +888,7 @@
 
     <script>
         // ===== BLOCKCHAIN CONFIGURATION =====
-        const PAYMENT_CONTRACT_ADDRESS = "0xeEb5D7E64ecF0F4BE1d4Eb3c9cDac156A698Cd0a"; // UPDATE THIS after deploying!
+        const PAYMENT_CONTRACT_ADDRESS = "0xeEb5D7E64ecF0F4BE1d4Eb3c9cDac156A698Cd0a";
         const PAYMENT_CONTRACT_ABI = [
             "function processPayment(string _paymentId, string _itemId, string _itemType, string _memberID) public payable returns (bool)",
             "function getPayment(string _paymentId) public view returns (string itemId, string itemType, address payer, uint256 amount, uint256 timestamp, bool completed)",
@@ -898,6 +903,197 @@
         let contract = null;
         let userAddress = null;
         let currentPaymentItem = null;
+        let isBlockchainConnected = false;
+
+        // ===== BLOCKCHAIN INITIALIZATION =====
+        
+        // Connect wallet and initialize blockchain
+        async function connectWallet() {
+            const connectBtn = document.getElementById('connectWalletBtn');
+            const originalText = connectBtn.textContent;
+            
+            try {
+                connectBtn.disabled = true;
+                connectBtn.textContent = '🔄 Connecting...';
+                
+                // Check if MetaMask is installed
+                if (typeof window.ethereum === 'undefined') {
+                    throw new Error('MetaMask not detected. Please install MetaMask browser extension.');
+                }
+
+                // Request account access
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                
+                if (!accounts || accounts.length === 0) {
+                    throw new Error('No accounts found. Please unlock MetaMask.');
+                }
+                
+                // Create provider and signer
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                // Get network info
+                const network = await provider.getNetwork();
+                console.log('Connected to network:', network);
+                
+                // Check if on correct network (DIDLab Chain ID: 252501)
+                if (network.chainId !== 252501) {
+                    console.warn('Not on DIDLab network. Current chain ID:', network.chainId);
+                    // Try to switch network
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x3DAF5' }], // 252501 in hex
+                        });
+                    } catch (switchError) {
+                        // If network not added, add it
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x3DAF5',
+                                    chainName: 'DIDLab QBFT Network',
+                                    nativeCurrency: {
+                                        name: 'Trust Token',
+                                        symbol: 'TT',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://rpc.didlab.io'],
+                                    blockExplorerUrls: ['https://explorer.didlab.org/']
+                                }]
+                            });
+                        }
+                    }
+                }
+                
+                // Initialize contract
+                contract = new ethers.Contract(
+                    PAYMENT_CONTRACT_ADDRESS,
+                    PAYMENT_CONTRACT_ABI,
+                    signer
+                );
+                
+                // Get wallet balance
+                const balance = await provider.getBalance(userAddress);
+                const balanceInEth = ethers.utils.formatEther(balance);
+                
+                // Update UI
+                document.getElementById('walletAddress').textContent = userAddress;
+                
+                isBlockchainConnected = true;
+                connectBtn.textContent = '✅ Wallet Connected';
+                connectBtn.style.background = 'rgba(16, 185, 129, 0.3)';
+                connectBtn.disabled = true;
+                
+                console.log('✅ Blockchain connected successfully');
+                console.log('Wallet Address:', userAddress);
+                console.log('Balance:', balanceInEth, 'TT');
+                console.log('Contract Address:', PAYMENT_CONTRACT_ADDRESS);
+                console.log('Network:', network.name, 'Chain ID:', network.chainId);
+                
+                // Try to get contract stats
+                try {
+                    const stats = await contract.getStats();
+                    console.log('Contract Stats:');
+                    console.log('  - Payments Processed:', stats.paymentsProcessed.toString());
+                    console.log('  - Amount Processed:', ethers.utils.formatEther(stats.amountProcessed), 'TT');
+                    console.log('  - Contract Balance:', ethers.utils.formatEther(stats.contractBalance), 'TT');
+                } catch (e) {
+                    console.warn('Could not fetch contract stats:', e.message);
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Blockchain connection failed:', error);
+                
+                let errorMessage = 'Failed to connect wallet: ';
+                if (error.code === 4001) {
+                    errorMessage += 'Connection request rejected by user.';
+                } else if (error.message.includes('MetaMask')) {
+                    errorMessage += error.message;
+                } else {
+                    errorMessage += error.message || 'Unknown error occurred.';
+                }
+                
+                alert(errorMessage);
+                
+                connectBtn.disabled = false;
+                connectBtn.textContent = originalText;
+                
+                return false;
+            }
+        }
+
+        // Auto-initialize blockchain (silent, no prompt)
+        async function initBlockchain() {
+            try {
+                // Check if MetaMask is installed
+                if (typeof window.ethereum === 'undefined') {
+                    console.warn('MetaMask not detected');
+                    return false;
+                }
+
+                // Check if already connected
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                
+                if (accounts && accounts.length > 0) {
+                    // Already connected, initialize silently
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    userAddress = accounts[0];
+                    
+                    contract = new ethers.Contract(
+                        PAYMENT_CONTRACT_ADDRESS,
+                        PAYMENT_CONTRACT_ABI,
+                        signer
+                    );
+                    
+                    document.getElementById('walletAddress').textContent = userAddress;
+                    
+                    const connectBtn = document.getElementById('connectWalletBtn');
+                    connectBtn.textContent = '✅ Wallet Connected';
+                    connectBtn.style.background = 'rgba(16, 185, 129, 0.3)';
+                    connectBtn.disabled = true;
+                    
+                    isBlockchainConnected = true;
+                    
+                    console.log('✅ Blockchain auto-connected');
+                    console.log('Wallet:', userAddress);
+                    
+                    return true;
+                }
+                
+                return false;
+                
+            } catch (error) {
+                console.warn('Auto-init failed:', error.message);
+                return false;
+            }
+        }
+
+        // Listen for account changes
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length === 0) {
+                    console.log('Wallet disconnected');
+                    isBlockchainConnected = false;
+                    const connectBtn = document.getElementById('connectWalletBtn');
+                    connectBtn.textContent = '🔗 Connect Wallet';
+                    connectBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+                    connectBtn.disabled = false;
+                } else {
+                    console.log('Account changed to:', accounts[0]);
+                    window.location.reload(); // Reload to reinitialize
+                }
+            });
+
+            window.ethereum.on('chainChanged', (chainId) => {
+                console.log('Network changed to:', chainId);
+                window.location.reload(); // Reload on network change
+            });
+        }
 
         // Mock data
         const mockBills = [
@@ -1042,7 +1238,7 @@
                     ` : `
                         <div class="bill-status status-pending">⏳ Pending Payment</div>
                         <button class="pay-btn" onclick="openPaymentModal('bill', '${bill.id}')">
-                            Pay ${bill.amount.toFixed(2)} via DIDLab Blockchain
+                            Pay $${bill.amount.toFixed(2)} via DIDLab Blockchain
                         </button>
                     `}
                 </div>
@@ -1096,7 +1292,7 @@
                     ` : `
                         <div class="bill-status status-pending">⏳ Pending Payment</div>
                         <button class="pay-btn" onclick="openPaymentModal('prescription', '${rx.id}')">
-                            Pay ${rx.amount.toFixed(2)} via DIDLab Blockchain
+                            Pay $${rx.amount.toFixed(2)} via DIDLab Blockchain
                         </button>
                     `}
                 </div>
@@ -1128,7 +1324,7 @@
                         <div class="transaction-type">${tx.type}</div>
                         <div class="transaction-meta">${new Date(tx.date).toLocaleDateString()} • ${tx.network}</div>
                     </div>
-                    <div class="transaction-amount">-${tx.amount.toFixed(2)}</div>
+                    <div class="transaction-amount">-$${tx.amount.toFixed(2)}</div>
                 </div>
             `).join('');
 
@@ -1139,7 +1335,7 @@
                             <h3 style="color: #1f2937; margin-bottom: 5px; font-size: 18px;">${tx.type}</h3>
                             <div style="color: #6b7280; font-size: 13px;">${new Date(tx.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
-                        <div style="font-size: 28px; font-weight: 700; color: #10b981;">-${tx.amount.toFixed(2)}</div>
+                        <div style="font-size: 28px; font-weight: 700; color: #10b981;">-$${tx.amount.toFixed(2)}</div>
                     </div>
                     <div class="tx-detail-row">
                         <span class="tx-detail-label">Transaction Hash</span>
@@ -1231,57 +1427,130 @@
         async function processPayment() {
             if (!currentPaymentItem) return;
 
+            // Check blockchain connection
+            if (!isBlockchainConnected || !contract || !signer) {
+                alert('⚠️ Wallet not connected!\n\nPlease click "Connect Wallet" button first to make blockchain payments.');
+                closeModal();
+                return;
+            }
+
             const confirmBtn = document.getElementById('confirmPayBtn');
             const originalText = confirmBtn.textContent;
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<span class="loading-spinner"></span>Processing on DIDLab Network...';
 
             try {
-                // Simulate blockchain transaction
-                await new Promise(resolve => setTimeout(resolve, 3000));
-
-                const txHash = '0x' + Math.random().toString(16).substring(2, 15) + Math.random().toString(16).substring(2, 15);
-
-                // Update item status
-                if (currentPaymentItem.type === 'bill') {
-                    const bill = mockBills.find(b => b.id === currentPaymentItem.id);
-                    if (bill) {
-                        bill.status = 'paid';
-                        bill.paidDate = new Date().toISOString().split('T')[0];
-                        bill.transactionHash = txHash;
-                    }
-                } else {
-                    const rx = mockPrescriptions.find(p => p.id === currentPaymentItem.id);
-                    if (rx) {
-                        rx.status = 'paid';
-                        rx.paidDate = new Date().toISOString().split('T')[0];
-                        rx.transactionHash = txHash;
-                    }
-                }
-
+                // Get item details
                 const item = currentPaymentItem.type === 'bill' 
                     ? mockBills.find(b => b.id === currentPaymentItem.id)
                     : mockPrescriptions.find(p => p.id === currentPaymentItem.id);
 
+                if (!item) throw new Error('Item not found');
+
+                // Get current patient data
+                const patientData = JSON.parse(sessionStorage.getItem('currentPatient'));
+                const memberID = patientData.memberID;
+
+                // Generate payment ID
+                const paymentId = `PAY${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+                // Convert amount to wei (assuming 1 token = 1 USD for simplicity)
+                const amountInWei = ethers.utils.parseEther(item.amount.toString());
+
+                console.log('\n========================================');
+                console.log('SUBMITTING BLOCKCHAIN PAYMENT');
+                console.log('========================================');
+                console.log('Payment ID:', paymentId);
+                console.log('Item ID:', item.id);
+                console.log('Item Type:', currentPaymentItem.type);
+                console.log('Amount (USD):', item.amount);
+                console.log('Amount (Wei):', amountInWei.toString());
+                console.log('Member ID:', memberID);
+                console.log('From Wallet:', userAddress);
+                console.log('To Contract:', PAYMENT_CONTRACT_ADDRESS);
+                console.log('========================================\n');
+
+                // Call smart contract - REAL BLOCKCHAIN TRANSACTION
+                const tx = await contract.processPayment(
+                    paymentId,
+                    item.id,
+                    currentPaymentItem.type,
+                    memberID,
+                    { value: amountInWei }
+                );
+
+                console.log('✅ Transaction submitted!');
+                console.log('Transaction Hash:', tx.hash);
+                
+                confirmBtn.innerHTML = '<span class="loading-spinner"></span>Waiting for confirmation...';
+
+                // Wait for transaction to be mined
+                const receipt = await tx.wait();
+                
+                console.log('\n========================================');
+                console.log('✅ TRANSACTION CONFIRMED!');
+                console.log('========================================');
+                console.log('Transaction Hash:', receipt.transactionHash);
+                console.log('Block Number:', receipt.blockNumber);
+                console.log('Gas Used:', receipt.gasUsed.toString());
+                console.log('Status:', receipt.status === 1 ? 'Success' : 'Failed');
+                console.log('========================================\n');
+
+                // Update item status
+                item.status = 'paid';
+                item.paidDate = new Date().toISOString().split('T')[0];
+                item.transactionHash = receipt.transactionHash;
+                item.blockNumber = receipt.blockNumber;
+
+                // Add to transaction history
                 mockTransactions.unshift({
                     type: currentPaymentItem.type === 'bill' ? item.type + ' Payment' : `Prescription - ${item.medication}`,
                     amount: item.amount,
                     date: new Date().toISOString().split('T')[0],
-                    hash: txHash,
-                    network: 'DIDLab QBFT'
+                    hash: receipt.transactionHash,
+                    network: 'DIDLab QBFT',
+                    blockNumber: receipt.blockNumber
                 });
 
+                // Refresh UI
                 loadBills();
                 loadPrescriptions();
                 loadTransactions();
                 updateStats();
-
                 closeModal();
                 
-                alert(`✅ Payment Successful!\n\nNetwork: DIDLab QBFT (Hyperledger Besu)\nTransaction Hash: ${txHash}\nAmount: $${item.amount.toFixed(2)}\n\nView on Explorer: https://explorer.didlab.org/`);
+                // Show success message
+                const explorerUrl = `https://explorer.didlab.org/tx/${receipt.transactionHash}`;
+                alert(`✅ Payment Successful!\n\n` +
+                      `Network: DIDLab QBFT (Hyperledger Besu)\n` +
+                      `Transaction Hash: ${receipt.transactionHash}\n` +
+                      `Block Number: ${receipt.blockNumber}\n` +
+                      `Amount: $${item.amount.toFixed(2)}\n` +
+                      `Gas Used: ${receipt.gasUsed.toString()} TT\n\n` +
+                      `View on Explorer:\n${explorerUrl}`);
 
             } catch (error) {
-                alert('❌ Payment failed. Please try again.');
+                console.error('\n❌ PAYMENT FAILED');
+                console.error('========================================');
+                console.error('Error:', error);
+                console.error('========================================\n');
+                
+                let errorMessage = 'Payment failed. ';
+                
+                if (error.code === 4001) {
+                    errorMessage += 'Transaction rejected by user.';
+                } else if (error.code === 'INSUFFICIENT_FUNDS') {
+                    errorMessage += 'Insufficient funds in wallet. Please add TT tokens to your wallet.';
+                } else if (error.message && error.message.includes('user rejected')) {
+                    errorMessage += 'Transaction rejected by user.';
+                } else if (error.message) {
+                    errorMessage += error.message;
+                } else {
+                    errorMessage += 'Unknown error occurred. Check console for details.';
+                }
+                
+                alert('❌ ' + errorMessage);
+                
             } finally {
                 confirmBtn.disabled = false;
                 confirmBtn.textContent = originalText;
@@ -1387,13 +1656,16 @@
         }
 
         // Initialize
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
             console.log('Dashboard loading...');
             
             // Load patient data first
             const dataLoaded = loadPatientData();
             
             if (dataLoaded !== false) {
+                // Try to auto-initialize blockchain (if already connected)
+                await initBlockchain();
+                
                 // Then load dashboard content
                 console.log('Loading dashboard content...');
                 loadBills();
@@ -1403,6 +1675,5 @@
                 console.log('Dashboard loaded successfully');
             }
         });
-    </script>
-</body>
+    </script></body>
 </html>
