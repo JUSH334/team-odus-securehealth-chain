@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureHealth Chain - Patient Registration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #dc3545;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #28a745;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #495057;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input.error {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid #c3e6cb;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spinner 0.6s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spinner {
+            to { transform: rotate(360deg); }
+        }
+
+            @media (max-width: 600px) {
+            .container {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 SecureHealth Chain</h1>
+            <p>Secure Patient Registration System</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-dot" id="dbStatus"></span>
+                <span id="dbText">Database</span>
+            </div>
+            <div class="status-item">
+                <span class="status-dot" id="blockchainStatus"></span>
+                <span id="blockchainText">Blockchain</span>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <div class="success-message" id="successMessage"></div>
+
+            <form id="registrationForm">
+                <div class="form-group">
+                    <label for="patientName">Full Name *</label>
+                    <input 
+                        type="text" 
+                        id="patientName" 
+                        placeholder="John Doe"
+                        required
+                    >
+                    <div class="error-message" id="patientNameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        placeholder="john.doe@example.com"
+                        required
+                    >
+                    <div class="error-message" id="emailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dateOfBirth">Date of Birth *</label>
+                    <input 
+                        type="date" 
+                        id="dateOfBirth"
+                        required
+                    >
+                    <div class="error-message" id="dateOfBirthError"></div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Register Patient
+                </button>
+            </form>
+        <div class="register-link" id="registerLink">
+            Already have an account? <a href="patient-login.html">Sign In</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3001/api';
+        
+        // Check backend connection
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                // Update database status
+                const dbStatus = document.getElementById('dbStatus');
+                const dbText = document.getElementById('dbText');
+                if (data.mongodb === 'connected') {
+                    dbStatus.classList.add('connected');
+                    dbText.textContent = 'Database: Connected';
+                } else {
+                    dbText.textContent = 'Database: Disconnected';
+                }
+                
+                // Update blockchain status
+                const blockchainStatus = document.getElementById('blockchainStatus');
+                const blockchainText = document.getElementById('blockchainText');
+                if (data.blockchain === 'connected') {
+                    blockchainStatus.classList.add('connected');
+                    blockchainText.textContent = 'Blockchain: Connected';
+                } else {
+                    blockchainText.textContent = 'Blockchain: Offline';
+                }
+            } catch (error) {
+                console.error('Connection check failed:', error);
+                document.getElementById('dbText').textContent = 'Database: Error';
+                document.getElementById('blockchainText').textContent = 'Blockchain: Error';
+            }
+        }
+
+        // Validate form
+        function validateForm(formData) {
+            const errors = {};
+            
+            // Patient name validation
+            if (!formData.patientName || formData.patientName.trim().length === 0) {
+                errors.patientName = 'Patient name is required';
+            } else if (formData.patientName.length < 2) {
+                errors.patientName = 'Name must be at least 2 characters';
+            } else if (!/^[a-zA-Z\s'-]+$/.test(formData.patientName)) {
+                errors.patientName = 'Name can only contain letters, spaces, hyphens, and apostrophes';
+            }
+            
+            // Email validation
+            if (!formData.email || formData.email.trim().length === 0) {
+                errors.email = 'Email address is required';
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+                errors.email = 'Please enter a valid email address';
+            }
+            
+            // Date of birth validation
+            if (!formData.dateOfBirth) {
+                errors.dateOfBirth = 'Date of birth is required';
+            } else {
+                const dob = new Date(formData.dateOfBirth);
+                const now = new Date();
+                if (dob >= now) {
+                    errors.dateOfBirth = 'Date of birth must be in the past';
+                }
+            }
+            
+            return errors;
+        }
+
+        // Display validation errors
+        function displayErrors(errors) {
+            // Clear all previous errors
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+            document.querySelectorAll('input, select').forEach(el => {
+                el.classList.remove('error');
+            });
+            
+            // Display new errors
+            Object.keys(errors).forEach(field => {
+                const errorElement = document.getElementById(`${field}Error`);
+                const inputElement = document.getElementById(field);
+                
+                if (errorElement && inputElement) {
+                    errorElement.textContent = errors[field];
+                    errorElement.classList.add('show');
+                    inputElement.classList.add('error');
+                }
+            });
+        }
+
+        // Show success message
+        function showSuccess(data) {
+            const successMsg = document.getElementById('successMessage');
+            successMsg.innerHTML = `
+                <strong>✓ Registration Successful!</strong><br>
+                A verification email has been sent to <strong>${data.email}</strong><br>
+                Please check your inbox and click the verification link to get your Member ID and activate your account.<br>
+                <small style="color: #6c757d; margin-top: 10px; display: block;">Check your spam folder if you don't see the email within a few minutes.</small>
+            `;
+            successMsg.classList.add('show');
+            
+            setTimeout(() => {
+                successMsg.classList.remove('show');
+            }, 10000);
+        }
+
+        // Handle form submission
+        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                patientName: document.getElementById('patientName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                dateOfBirth: document.getElementById('dateOfBirth').value
+            };
+            
+            // Validate form
+            const errors = validateForm(formData);
+            if (Object.keys(errors).length > 0) {
+                displayErrors(errors);
+                return;
+            }
+            
+            // Clear errors
+            displayErrors({});
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading-spinner"></span>Registering...';
+            
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Registration failed');
+                }
+                
+                // Show success message
+                showSuccess(result.data);
+                
+                // Reset form
+                document.getElementById('registrationForm').reset();
+                
+            } catch (error) {
+                alert(`Registration failed: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            checkConnection();
+        });
+    </script>
+</body>
+</html>
