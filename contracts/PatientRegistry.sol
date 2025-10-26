@@ -2,142 +2,102 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title PatientRegistry
- * @dev Core smart contract for patient registration and management in SecureHealth Chain
+ * @title PaymentRegistry
+ * @dev Smart contract for healthcare payment processing on DIDLab QBFT
  */
-contract PatientRegistry {
+contract PaymentRegistry {
     
-    // Patient structure to store essential information
-    struct Patient {
-        address patientAddress;
+    // Payment structure
+    struct Payment {
+        string paymentId;
+        string itemId;
+        string itemType; // "bill" or "prescription"
+        address payer;
+        uint256 amount;
+        uint256 timestamp;
+        bool completed;
         string memberID;
-        string encryptedPersonalData; // HIPAA-compliant encrypted data
-        uint256 registrationTimestamp;
-        bool isActive;
-        address assignedProvider;
     }
     
-    // Events for transparency and audit trail
-    event PatientRegistered(
-        address indexed patientAddress,
-        string memberID,
+    // Events
+    event PaymentProcessed(
+        string indexed paymentId,
+        string itemId,
+        address indexed payer,
+        uint256 amount,
         uint256 timestamp
     );
     
-    event PatientUpdated(
-        address indexed patientAddress,
-        string memberID,
-        uint256 timestamp
-    );
-    
-    event ProviderAssigned(
-        address indexed patientAddress,
-        address indexed providerAddress,
+    event PaymentRefunded(
+        string indexed paymentId,
+        address indexed payer,
+        uint256 amount,
         uint256 timestamp
     );
     
     // State variables
-    mapping(address => Patient) public patients;
-    mapping(string => address) public memberIDToAddress;
-    mapping(address => bool) public authorizedProviders;
+    mapping(string => Payment) public payments;
+    mapping(address => string[]) public userPayments;
+    mapping(string => bool) public itemPaid; // Track if item is already paid
     
-    address public custodian; // Insurance company/PBM address
-    uint256 public totalPatients;
+    address public owner;
+    uint256 public totalPaymentsProcessed;
+    uint256 public totalAmountProcessed;
     
-    // Modifiers for access control
-    modifier onlyCustodian() {
-        require(msg.sender == custodian, "Only custodian can perform this action");
-        _;
-    }
-    
-    modifier onlyAuthorizedProvider() {
-        require(authorizedProviders[msg.sender], "Not an authorized provider");
-        _;
-    }
-    
-    modifier patientExists(address _patient) {
-        require(patients[_patient].isActive, "Patient not registered");
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can perform this action");
         _;
     }
     
     constructor() {
-        custodian = msg.sender;
+        owner = msg.sender;
     }
     
     /**
-     * @dev Register a new patient - main function for vertical slice
-     * @param _memberID Insurance member ID
-     * @param _encryptedData Encrypted personal data (HIPAA compliant)
+     * @dev Process a healthcare payment
+     * @param _paymentId Unique payment identifier
+     * @param _itemId Bill or prescription ID
+     * @param _itemType Type of item (bill or prescription)
+     * @param _memberID Patient member ID
      */
-    function registerPatient(
-        string memory _memberID,
-        string memory _encryptedData
-    ) public returns (bool) {
-        require(bytes(_memberID).length > 0, "Member ID cannot be empty");
-        require(bytes(_encryptedData).length > 0, "Patient data cannot be empty");
-        require(!patients[msg.sender].isActive, "Patient already registered");
-        require(memberIDToAddress[_memberID] == address(0), "Member ID already exists");
+    function processPayment(
+        string memory _paymentId,
+        string memory _itemId,
+        string memory _itemType,
+        string memory _memberID
+    ) public payable returns (bool) {
+        require(msg.value > 0, "Payment amount must be greater than 0");
+        require(!itemPaid[_itemId], "Item already paid");
+        require(bytes(_paymentId).length > 0, "Payment ID required");
+        require(bytes(_itemId).length > 0, "Item ID required");
         
-        // Create new patient record
-        Patient memory newPatient = Patient({
-            patientAddress: msg.sender,
-            memberID: _memberID,
-            encryptedPersonalData: _encryptedData,
-            registrationTimestamp: block.timestamp,
-            isActive: true,
-            assignedProvider: address(0)
+        // Create payment record
+        Payment memory newPayment = Payment({
+            paymentId: _paymentId,
+            itemId: _itemId,
+            itemType: _itemType,
+            payer: msg.sender,
+            amount: msg.value,
+            timestamp: block.timestamp,
+            completed: true,
+            memberID: _memberID
         });
         
-        // Update state
-        patients[msg.sender] = newPatient;
-        memberIDToAddress[_memberID] = msg.sender;
-        totalPatients++;
+        // Store payment
+        payments[_paymentId] = newPayment;
+        userPayments[msg.sender].push(_paymentId);
+        itemPaid[_itemId] = true;
         
-        // Emit event for transparency and audit
-        emit PatientRegistered(msg.sender, _memberID, block.timestamp);
+        // Update totals
+        totalPaymentsProcessed++;
+        totalAmountProcessed += msg.value;
         
-        return true;
-    }
-    
-    /**
-     * @dev Get patient details
-     * @param _patientAddress Address of the patient
-     */
-    function getPatient(address _patientAddress) 
-        public 
-        view 
-        returns (
-            string memory memberID,
-            uint256 registrationTimestamp,
-            bool isActive,
-            address assignedProvider
-        ) 
-    {
-        Patient memory patient = patients[_patientAddress];
-        return (
-            patient.memberID,
-            patient.registrationTimestamp,
-            patient.isActive,
-            patient.assignedProvider
-        );
-    }
-    
-    /**
-     * @dev Update patient information
-     * @param _encryptedData New encrypted personal data
-     */
-    function updatePatientData(string memory _encryptedData) 
-        public 
-        patientExists(msg.sender) 
-        returns (bool) 
-    {
-        require(bytes(_encryptedData).length > 0, "Data cannot be empty");
-        
-        patients[msg.sender].encryptedPersonalData = _encryptedData;
-        
-        emit PatientUpdated(
-            msg.sender, 
-            patients[msg.sender].memberID, 
+        // Emit event
+        emit PaymentProcessed(
+            _paymentId,
+            _itemId,
+            msg.sender,
+            msg.value,
             block.timestamp
         );
         
@@ -145,47 +105,88 @@ contract PatientRegistry {
     }
     
     /**
-     * @dev Assign a provider to a patient
-     * @param _patientAddress Address of the patient
-     * @param _providerAddress Address of the provider
+     * @dev Get payment details
+     * @param _paymentId Payment identifier
      */
-    function assignProvider(address _patientAddress, address _providerAddress)
-        public
-        onlyCustodian
-        patientExists(_patientAddress)
-        returns (bool)
-    {
-        require(authorizedProviders[_providerAddress], "Not an authorized provider");
-        
-        patients[_patientAddress].assignedProvider = _providerAddress;
-        
-        emit ProviderAssigned(_patientAddress, _providerAddress, block.timestamp);
-        
-        return true;
-    }
-    
-    /**
-     * @dev Authorize a provider (custodian only)
-     * @param _provider Address of the provider to authorize
-     */
-    function authorizeProvider(address _provider) 
+    function getPayment(string memory _paymentId) 
         public 
-        onlyCustodian 
-        returns (bool) 
+        view 
+        returns (
+            string memory itemId,
+            string memory itemType,
+            address payer,
+            uint256 amount,
+            uint256 timestamp,
+            bool completed
+        ) 
     {
-        authorizedProviders[_provider] = true;
-        return true;
+        Payment memory payment = payments[_paymentId];
+        return (
+            payment.itemId,
+            payment.itemType,
+            payment.payer,
+            payment.amount,
+            payment.timestamp,
+            payment.completed
+        );
     }
     
     /**
-     * @dev Check if a member ID is already registered
-     * @param _memberID Insurance member ID to check
+     * @dev Get all payments for a user
+     * @param _user User address
      */
-    function isMemberIDRegistered(string memory _memberID) 
+    function getUserPayments(address _user) 
+        public 
+        view 
+        returns (string[] memory) 
+    {
+        return userPayments[_user];
+    }
+    
+    /**
+     * @dev Check if an item has been paid
+     * @param _itemId Item identifier
+     */
+    function isItemPaid(string memory _itemId) 
         public 
         view 
         returns (bool) 
     {
-        return memberIDToAddress[_memberID] != address(0);
+        return itemPaid[_itemId];
+    }
+    
+    /**
+     * @dev Withdraw funds (owner only)
+     */
+    function withdraw() public onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to withdraw");
+        payable(owner).transfer(balance);
+    }
+    
+    /**
+     * @dev Get contract balance
+     */
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+    
+    /**
+     * @dev Get total statistics
+     */
+    function getStats() 
+        public 
+        view 
+        returns (
+            uint256 paymentsProcessed,
+            uint256 amountProcessed,
+            uint256 contractBalance
+        ) 
+    {
+        return (
+            totalPaymentsProcessed,
+            totalAmountProcessed,
+            address(this).balance
+        );
     }
 }

@@ -1,14 +1,41 @@
 // backend/server.js
 // Patient Registration Backend with MongoDB and Blockchain Integration
 
+require('dotenv').config(); // MUST BE FIRST LINE!
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { ethers } = require('ethers');
 const path = require('path');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Email configuration
+const EMAIL_CONFIG = {
+    service: process.env.EMAIL_SERVICE || 'gmail',
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT) || 587,
+    secure: false,
+    auth: {
+        user: process.env.EMAIL_USER || 'your-email@gmail.com',
+        pass: process.env.EMAIL_PASS || 'your-app-password'
+    }
+};
+
+// Create email transporter
+let emailTransporter;
+try {
+    emailTransporter = nodemailer.createTransport(EMAIL_CONFIG);
+    console.log('✅ Email transporter configured');
+    console.log('📧 Sending from:', EMAIL_CONFIG.auth.user);
+} catch (error) {
+    console.error('⚠️ Email configuration failed:', error.message);
+    console.log('Running without email functionality');
+}
 
 // Middleware
 app.use(cors());
@@ -43,10 +70,25 @@ const patientSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    bloodType: {
+    email: {
         type: String,
         required: true,
-        enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+        lowercase: true,
+        trim: true,
+        unique: true,
+        index: true
+    },
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationToken: {
+        type: String,
+        default: null
+    },
+    verificationTokenExpiry: {
+        type: Date,
+        default: null
     },
     walletAddress: {
         type: String,
@@ -103,6 +145,7 @@ const patientSchema = new mongoose.Schema({
 patientSchema.index({ registeredAt: -1 });
 patientSchema.index({ walletAddress: 1 });
 patientSchema.index({ transactionHash: 1 });
+patientSchema.index({ email: 1 });
 
 const Patient = mongoose.model('Patient', patientSchema);
 
@@ -169,6 +212,186 @@ async function initBlockchain() {
 // Initialize blockchain connection
 initBlockchain();
 
+// ============= HELPER FUNCTIONS =============
+
+// Generate unique Member ID
+function generateMemberID() {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+    return `MEM${timestamp}${random}`;
+}
+
+// Send verification email (simulation for now)
+async function sendVerificationEmail(email, memberID, token) {
+    const verificationLink = `http://localhost:3001/api/verify-email?token=${token}`;
+    
+    // Email HTML template
+    const emailHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+                border-radius: 10px 10px 0 0;
+            }
+            .content {
+                background: #f8f9fa;
+                padding: 30px;
+                border-radius: 0 0 10px 10px;
+            }
+            .member-id-box {
+                background: white;
+                border: 2px solid #667eea;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 20px 0;
+                text-align: center;
+            }
+            .member-id {
+                font-size: 24px;
+                font-weight: bold;
+                color: #667eea;
+                font-family: monospace;
+                letter-spacing: 2px;
+            }
+            .verify-button {
+                display: inline-block;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 40px;
+                text-decoration: none;
+                border-radius: 8px;
+                margin: 20px 0;
+                font-weight: bold;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 30px;
+                color: #6c757d;
+                font-size: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🏥 Welcome to SecureHealth Chain</h1>
+        </div>
+        <div class="content">
+            <h2>Verify Your Email Address</h2>
+            <p>Thank you for registering with SecureHealth Chain! We're excited to have you on board.</p>
+            
+            <div class="member-id-box">
+                <p style="margin: 0 0 10px 0; color: #6c757d;">Your Member ID:</p>
+                <div class="member-id">${memberID}</div>
+                <p style="margin: 10px 0 0 0; color: #6c757d; font-size: 14px;">Save this ID - you'll need it to log in!</p>
+            </div>
+            
+            <p>Please verify your email address by clicking the button below:</p>
+            
+            <div style="text-align: center;">
+                <a href="${verificationLink}" class="verify-button">Verify Email Address</a>
+            </div>
+            
+            <p style="margin-top: 20px; font-size: 14px; color: #6c757d;">
+                Or copy and paste this link into your browser:<br>
+                <a href="${verificationLink}">${verificationLink}</a>
+            </p>
+            
+            <p style="margin-top: 30px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                <strong>⚠️ Important:</strong> This verification link will expire in 24 hours.
+            </p>
+            
+            <p style="margin-top: 20px;">
+                If you didn't create an account with SecureHealth Chain, please ignore this email.
+            </p>
+        </div>
+        <div class="footer">
+            <p>© 2025 SecureHealth Chain. All rights reserved.</p>
+            <p>This is an automated email. Please do not reply.</p>
+        </div>
+    </body>
+    </html>
+    `;
+    
+    // Email text version (fallback)
+    const emailText = `
+Welcome to SecureHealth Chain!
+
+Your Member ID: ${memberID}
+
+Please verify your email address by clicking the link below:
+${verificationLink}
+
+This link will expire in 24 hours.
+
+If you didn't create an account with SecureHealth Chain, please ignore this email.
+
+© 2025 SecureHealth Chain. All rights reserved.
+    `;
+    
+    try {
+        if (emailTransporter) {
+            // Send actual email
+            const info = await emailTransporter.sendMail({
+                from: `"SecureHealth Chain" <${EMAIL_CONFIG.auth.user}>`,
+                to: email,
+                subject: '🏥 Verify Your SecureHealth Chain Account - Member ID Inside',
+                text: emailText,
+                html: emailHTML
+            });
+            
+            console.log('\n========================================');
+            console.log('📧 EMAIL SENT SUCCESSFULLY');
+            console.log('========================================');
+            console.log('To:', email);
+            console.log('Member ID:', memberID);
+            console.log('Message ID:', info.messageId);
+            console.log('========================================\n');
+            
+            return true;
+        } else {
+            // Fallback: Log to console if email not configured
+            console.log('\n========================================');
+            console.log('📧 VERIFICATION EMAIL (Console Mode)');
+            console.log('========================================');
+            console.log('To:', email);
+            console.log('Subject: Verify Your SecureHealth Chain Account');
+            console.log('\nYour Member ID:', memberID);
+            console.log('\nVerification Link:');
+            console.log(verificationLink);
+            console.log('\nThis link will expire in 24 hours.');
+            console.log('========================================\n');
+            
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to send email:', error);
+        
+        // Still log to console as fallback
+        console.log('\n========================================');
+        console.log('📧 EMAIL FAILED - CONSOLE FALLBACK');
+        console.log('========================================');
+        console.log('To:', email);
+        console.log('Member ID:', memberID);
+        console.log('Verification Link:', verificationLink);
+        console.log('========================================\n');
+        
+        throw new Error('Failed to send verification email');
+    }
+}
+
 // ============= API ENDPOINTS =============
 
 // Health check endpoint
@@ -188,41 +411,63 @@ app.get('/api/health', async (req, res) => {
 // Register new patient
 app.post('/api/register', async (req, res) => {
     try {
-        const { memberID, patientName, dateOfBirth, bloodType } = req.body;
+        const { patientName, dateOfBirth, email } = req.body;
         
         // Validate input
-        if (!memberID || !patientName || !dateOfBirth || !bloodType) {
+        if (!patientName || !dateOfBirth || !email) {
             return res.status(400).json({
                 success: false,
                 error: 'All fields are required'
             });
         }
         
-        // Check if member already exists in database
-        const existingPatient = await Patient.findOne({ memberID });
-        if (existingPatient) {
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
             return res.status(400).json({
                 success: false,
-                error: 'Member ID already registered',
+                error: 'Invalid email format'
+            });
+        }
+        
+        // Check if email already exists
+        const existingEmail = await Patient.findOne({ email: email.toLowerCase() });
+        if (existingEmail) {
+            return res.status(400).json({
+                success: false,
+                error: 'This email is already registered',
                 existingRecord: {
-                    memberID: existingPatient.memberID,
-                    registeredAt: existingPatient.registeredAt
+                    email: existingEmail.email,
+                    registeredAt: existingEmail.registeredAt
                 }
             });
         }
+        
+        // Generate unique Member ID
+        let memberID;
+        let isUnique = false;
+        while (!isUnique) {
+            memberID = generateMemberID();
+            const existing = await Patient.findOne({ memberID });
+            if (!existing) isUnique = true;
+        }
+        
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
         
         // Log validation event
         await Event.create({
             eventType: 'validation:success',
             memberID,
-            data: { memberID, patientName }
+            data: { memberID, patientName, email }
         });
         
         // Prepare encrypted data
         const encryptedData = '0x' + Buffer.from(JSON.stringify({
             patientName,
             dateOfBirth,
-            bloodType,
+            email,
             timestamp: new Date().toISOString()
         })).toString('hex');
         
@@ -267,13 +512,19 @@ app.post('/api/register', async (req, res) => {
             memberID,
             patientName,
             dateOfBirth,
-            bloodType,
+            email: email.toLowerCase(),
+            emailVerified: false,
+            verificationToken,
+            verificationTokenExpiry,
             walletAddress,
             transactionHash,
             blockNumber,
             encryptedData,
-            registrationStatus: 'confirmed'
+            registrationStatus: 'pending'
         });
+        
+        // Send verification email
+        await sendVerificationEmail(email, memberID, verificationToken);
         
         // Log success event
         await Event.create({
@@ -281,9 +532,11 @@ app.post('/api/register', async (req, res) => {
             memberID,
             data: {
                 memberID,
+                email,
                 transactionHash,
                 blockNumber,
-                dbRecordId: newPatient._id
+                dbRecordId: newPatient._id,
+                emailSent: true
             },
             transactionHash,
             blockNumber
@@ -291,14 +544,17 @@ app.post('/api/register', async (req, res) => {
         
         res.json({
             success: true,
+            message: 'Registration successful. Please check your email to verify your account.',
             data: {
                 memberID: newPatient.memberID,
                 patientName: newPatient.patientName,
+                email: newPatient.email,
                 transactionHash,
                 blockNumber,
                 walletAddress,
                 registeredAt: newPatient.registeredAt,
-                _id: newPatient._id
+                _id: newPatient._id,
+                emailVerified: false
             }
         });
         
@@ -308,7 +564,7 @@ app.post('/api/register', async (req, res) => {
         // Log error event
         await Event.create({
             eventType: 'registration:error',
-            memberID: req.body.memberID,
+            memberID: req.body.memberID || 'unknown',
             data: { error: error.message }
         });
         
@@ -316,6 +572,419 @@ app.post('/api/register', async (req, res) => {
             success: false,
             error: error.message
         });
+    }
+});
+
+// Email verification endpoint
+app.get('/api/verify-email', async (req, res) => {
+    try {
+        const { token } = req.query;
+        
+        if (!token) {
+            return res.status(400).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Invalid Verification Link</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                        .error { color: #dc3545; }
+                    </style>
+                </head>
+                <body>
+                    <h1 class="error">❌ Invalid Verification Link</h1>
+                    <p>The verification link is invalid or missing.</p>
+                </body>
+                </html>
+            `);
+        }
+        
+        // Find patient with this token
+        const patient = await Patient.findOne({ 
+            verificationToken: token,
+            verificationTokenExpiry: { $gt: new Date() }
+        });
+        
+        if (!patient) {
+            return res.status(400).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Verification Failed</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                        .error { color: #dc3545; }
+                    </style>
+                </head>
+                <body>
+                    <h1 class="error">❌ Verification Link Expired</h1>
+                    <p>This verification link has expired or is invalid.</p>
+                    <p>Please register again or contact support.</p>
+                </body>
+                </html>
+            `);
+        }
+        
+        // Update patient status
+        patient.emailVerified = true;
+        patient.registrationStatus = 'confirmed';
+        patient.verificationToken = null;
+        patient.verificationTokenExpiry = null;
+        await patient.save();
+        
+        // Log verification event
+        await Event.create({
+            eventType: 'email:verified',
+            memberID: patient.memberID,
+            data: { 
+                email: patient.email,
+                verifiedAt: new Date()
+            }
+        });
+        
+        // Return success page
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Email Verified</title>
+                <style>
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        text-align: center; 
+                        padding: 50px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                    }
+                    .success { 
+                        background: white;
+                        color: #333;
+                        padding: 40px;
+                        border-radius: 20px;
+                        max-width: 500px;
+                        margin: 0 auto;
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                    }
+                    .check { color: #28a745; font-size: 60px; }
+                    .member-id { 
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 10px;
+                        margin: 20px 0;
+                        font-family: monospace;
+                        font-size: 18px;
+                        font-weight: bold;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="success">
+                    <div class="check">✓</div>
+                    <h1>Email Verified Successfully!</h1>
+                    <p>Your account has been activated.</p>
+                    <div class="member-id">
+                        Your Member ID: ${patient.memberID}
+                    </div>
+                    <p>You can now use this Member ID to log in to your account.</p>
+                    <p><strong>Patient Name:</strong> ${patient.patientName}</p>
+                    <p><strong>Email:</strong> ${patient.email}</p>
+                </div>
+            </body>
+            </html>
+        `);
+        
+    } catch (error) {
+        console.error('Email verification error:', error);
+        res.status(500).send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Verification Error</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                    .error { color: #dc3545; }
+                </style>
+            </head>
+            <body>
+                <h1 class="error">❌ Verification Error</h1>
+                <p>An error occurred during verification. Please try again later.</p>
+            </body>
+            </html>
+        `);
+    }
+});
+
+// Send login link via email
+app.post('/api/send-login-link', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email is required'
+            });
+        }
+        
+        // Find patient by email
+        const patient = await Patient.findOne({ email: email.toLowerCase() });
+        
+        if (!patient) {
+            return res.status(404).json({
+                success: false,
+                error: 'No account found with this email address'
+            });
+        }
+        
+        if (!patient.emailVerified) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please verify your email first. Check your inbox for the verification link.'
+            });
+        }
+        
+        // Generate login token
+        const loginToken = crypto.randomBytes(32).toString('hex');
+        const loginTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        
+        // Store login token
+        patient.loginToken = loginToken;
+        patient.loginTokenExpiry = loginTokenExpiry;
+        await patient.save();
+        
+        // Send login link email
+        const loginLink = `http://localhost:3001/api/email-login?token=${loginToken}`;
+        
+        const emailHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 30px;
+                    text-align: center;
+                    border-radius: 10px 10px 0 0;
+                }
+                .content {
+                    background: #f8f9fa;
+                    padding: 30px;
+                    border-radius: 0 0 10px 10px;
+                }
+                .login-button {
+                    display: inline-block;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 15px 40px;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    font-weight: bold;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🏥 SecureHealth Chain</h1>
+            </div>
+            <div class="content">
+                <h2>Login to Your Account</h2>
+                <p>Hi ${patient.patientName},</p>
+                <p>Click the button below to securely log in to your SecureHealth Chain account:</p>
+                
+                <div style="text-align: center;">
+                    <a href="${loginLink}" class="login-button">Login to Dashboard</a>
+                </div>
+                
+                <p style="margin-top: 20px; font-size: 14px; color: #6c757d;">
+                    Or copy and paste this link into your browser:<br>
+                    <a href="${loginLink}">${loginLink}</a>
+                </p>
+                
+                <p style="margin-top: 30px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                    <strong>⚠️ Security Notice:</strong> This login link will expire in 1 hour. If you didn't request this login link, please ignore this email.
+                </p>
+                
+                <p style="margin-top: 20px;">
+                    <strong>Your Member ID:</strong> ${patient.memberID}
+                </p>
+            </div>
+        </body>
+        </html>
+        `;
+        
+        try {
+            if (emailTransporter) {
+                await emailTransporter.sendMail({
+                    from: `"SecureHealth Chain" <${EMAIL_CONFIG.auth.user}>`,
+                    to: email,
+                    subject: '🔐 Your SecureHealth Chain Login Link',
+                    html: emailHTML
+                });
+                
+                console.log('📧 Login link sent to:', email);
+            } else {
+                console.log('\n========================================');
+                console.log('📧 LOGIN LINK (Console Mode)');
+                console.log('========================================');
+                console.log('To:', email);
+                console.log('Login Link:', loginLink);
+                console.log('Member ID:', patient.memberID);
+                console.log('========================================\n');
+            }
+        } catch (error) {
+            console.error('Failed to send login email:', error);
+        }
+        
+        res.json({
+            success: true,
+            message: 'Login link sent to your email'
+        });
+        
+    } catch (error) {
+        console.error('Send login link error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Handle email login link
+app.get('/api/email-login', async (req, res) => {
+    try {
+        const { token } = req.query;
+        
+        if (!token) {
+            return res.status(400).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Invalid Login Link</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                        .error { color: #dc3545; }
+                    </style>
+                </head>
+                <body>
+                    <h1 class="error">❌ Invalid Login Link</h1>
+                    <p>The login link is invalid or missing.</p>
+                </body>
+                </html>
+            `);
+        }
+        
+        // Find patient with this login token
+        const patient = await Patient.findOne({
+            loginToken: token,
+            loginTokenExpiry: { $gt: new Date() }
+        }).select('-encryptedData -__v');
+        
+        if (!patient) {
+            return res.status(400).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Login Failed</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                        .error { color: #dc3545; }
+                    </style>
+                </head>
+                <body>
+                    <h1 class="error">❌ Login Link Expired</h1>
+                    <p>This login link has expired or is invalid.</p>
+                    <p><a href="/patient-login.html">Request a new login link</a></p>
+                </body>
+                </html>
+            `);
+        }
+        
+        // Clear the login token
+        patient.loginToken = null;
+        patient.loginTokenExpiry = null;
+        await patient.save();
+        
+        // Redirect to login page with patient data in URL (temporary session)
+        const patientDataEncoded = encodeURIComponent(JSON.stringify({
+            memberID: patient.memberID,
+            patientName: patient.patientName,
+            email: patient.email,
+            dateOfBirth: patient.dateOfBirth,
+            registeredAt: patient.registeredAt,
+            emailVerified: patient.emailVerified,
+            registrationStatus: patient.registrationStatus
+        }));
+        
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Logging In...</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        padding: 50px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                    }
+                    .spinner {
+                        border: 4px solid rgba(255,255,255,0.3);
+                        border-top: 4px solid white;
+                        border-radius: 50%;
+                        width: 40px;
+                        height: 40px;
+                        animation: spin 1s linear infinite;
+                        margin: 20px auto;
+                    }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>✅ Login Successful!</h1>
+                <div class="spinner"></div>
+                <p>Redirecting to your dashboard...</p>
+                <script>
+                    sessionStorage.setItem('currentPatient', '${patientDataEncoded}');
+                    setTimeout(() => {
+                        window.location.href = '/patient-login.html';
+                    }, 2000);
+                </script>
+            </body>
+            </html>
+        `);
+        
+    } catch (error) {
+        console.error('Email login error:', error);
+        res.status(500).send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Login Error</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                    .error { color: #dc3545; }
+                </style>
+            </head>
+            <body>
+                <h1 class="error">❌ Login Error</h1>
+                <p>An error occurred during login. Please try again.</p>
+            </body>
+            </html>
+        `);
     }
 });
 
@@ -392,7 +1061,8 @@ app.get('/api/patients/search', async (req, res) => {
         const patients = await Patient.find({
             $or: [
                 { memberID: { $regex: q, $options: 'i' } },
-                { patientName: { $regex: q, $options: 'i' } }
+                { patientName: { $regex: q, $options: 'i' } },
+                { email: { $regex: q, $options: 'i' } }
             ]
         })
         .select('-encryptedData -__v')
@@ -429,16 +1099,6 @@ app.get('/api/stats', async (req, res) => {
             registeredAt: { $gte: last7Days }
         });
         
-        // Blood type distribution
-        const bloodTypeStats = await Patient.aggregate([
-            {
-                $group: {
-                    _id: '$bloodType',
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
-        
         // Recent events
         const recentEvents = await Event.find()
             .sort({ timestamp: -1 })
@@ -450,7 +1110,6 @@ app.get('/api/stats', async (req, res) => {
                 totalPatients,
                 registeredToday,
                 registeredThisWeek,
-                bloodTypeDistribution: bloodTypeStats,
                 averagePerDay: (registeredThisWeek / 7).toFixed(1)
             },
             recentEvents
