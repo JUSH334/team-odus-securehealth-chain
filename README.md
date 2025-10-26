@@ -255,5 +255,3 @@ securehealth-chain/
 ```
 
 ---
-
-**⚠️ Disclaimer**: This is a prototype/educational project. Not audited for production use. Consult legal and security professionals before deploying in a real healthcare environment.
