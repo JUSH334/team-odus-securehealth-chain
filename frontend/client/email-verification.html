@@ -377,17 +377,26 @@
             const email = urlParams.get('email');
 
             if (!memberID || !email) {
-                // No data found, redirect to registration
+                // Check if there's pending verification data in sessionStorage
+                const pending = sessionStorage.getItem('pendingVerification');
+                if (pending) {
+                    const data = JSON.parse(pending);
+                    document.getElementById('memberID').textContent = data.memberID;
+                    document.getElementById('userEmail').textContent = data.email;
+                    return;
+                }
+                
+                // No data found at all, redirect to registration
                 alert('No registration data found. Please register first.');
                 window.location.href = 'patient-registration.html';
                 return;
             }
 
-            // Display the data
+            // Display the data from URL
             document.getElementById('memberID').textContent = memberID;
             document.getElementById('userEmail').textContent = email;
 
-            // Store in sessionStorage for resend functionality
+            // Store in sessionStorage for future use
             sessionStorage.setItem('pendingVerification', JSON.stringify({ memberID, email }));
         }
 
