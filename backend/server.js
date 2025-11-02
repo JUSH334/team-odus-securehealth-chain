@@ -41,7 +41,7 @@ try {
 app.use(cors({
     origin: [
         'http://localhost:3000',
-        'https://jush334.github.io/securehealthchain-frontend'
+        'https://jush334.github.io'
     ],
     credentials: true
 }));
