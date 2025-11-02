@@ -38,7 +38,14 @@ try {
 }
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:3000',
+        'https://jush334.github.io'
+    ],
+    credentials: true
+}));
+
 app.use(express.json());
 app.use(express.static('public'));
 
